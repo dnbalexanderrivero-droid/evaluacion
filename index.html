@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>DNB - Evaluación Brigadas de Emergencia</title>
+  <!-- Generador de Códigos QR ligero -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    :root {
+      --primary: #c00d0d;
+      --primary-dark: #8b0000;
+      --secondary: #1a1a1a;
+      --accent: #2e7d32;
+      --bg: #f4f6f9;
+      --card-bg: #ffffff;
+      --text: #222222;
+      --border: #dcdcdc;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 10px;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 480px;
+      background: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* Vistas */
+    .view {
+      display: none;
+      padding: 20px;
+      flex-direction: column;
+      align-items: center;
+    }
+    .view.active {
+      display: flex;
+    }
+
+    /* Encabezado */
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .header h1 {
+      font-size: 1.1rem;
+      color: var(--primary);
+      text-transform: uppercase;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+    }
+    .header h2 {
+      font-size: 0.85rem;
+      color: #555;
+      margin-top: 4px;
+      font-weight: 600;
+    }
+    .header h3 {
+      font-size: 0.95rem;
+      color: var(--secondary);
+      margin-top: 6px;
+      font-weight: 700;
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 5px;
+      display: inline-block;
+    }
+
+    .logo-container {
+      margin: 15px 0;
+      display: flex;
+      justify-content: center;
+    }
+    .logo-icon {
+      width: 85px;
+      height: 85px;
+      fill: var(--primary);
+    }
+
+    /* Botones */
+    .btn {
+      width: 100%;
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      transition: all 0.2s ease;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:active { background: var(--primary-dark); }
+    .btn-secondary { background: #37474f; color: white; }
+    .btn-success { background: var(--accent) !important; color: white !important; cursor: pointer !important; }
+    .btn-disabled { background: #cccccc !important; color: #777777 !important; cursor: not-allowed !important; }
+    .btn-outline { background: transparent; border: 2px solid #555; color: #333; }
+
+    /* QR */
+    #qr-section {
+      margin-top: 15px;
+      padding: 15px;
+      background: #fafafa;
+      border-radius: 8px;
+      text-align: center;
+      border: 1px dashed #bbb;
+    }
+    #qrcode {
+      display: flex;
+      justify-content: center;
+      margin-top: 10px;
+    }
+
+    /* Modal Alerta Roja */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .modal-card {
+      background: #ffffff;
+      border-radius: 12px;
+      border-top: 8px solid var(--primary);
+      padding: 22px;
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+    }
+    .modal-card h4 {
+      color: var(--primary);
+      font-size: 1.2rem;
+      margin-bottom: 12px;
+    }
+    .modal-card p {
+      font-size: 0.95rem;
+      color: #333;
+      margin-bottom: 20px;
+      line-height: 1.4;
+    }
+
+    /* Formularios y Bloques */
+    .form-group {
+      width: 100%;
+      margin-bottom: 15px;
+      text-align: left;
+    }
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: bold;
+      margin-bottom: 5px;
+      color: #333;
+    }
+    .form-control {
+      width: 100%;
+      padding: 12px;
+      font-size: 1rem;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      outline: none;
+      background: #fff;
+    }
+    .form-control:focus {
+      border-color: var(--primary);
+    }
+
+    /* Tarjetas de Preguntas */
+    .question-card {
+      width: 100%;
+      background: #ffffff;
+      border: 1px solid #e0e0e0;
+      border-left: 5px solid var(--primary);
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 18px;
+      text-align: left;
+    }
+    .question-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      line-height: 1.35;
+    }
+    .question-img {
+      max-width: 130px;
+      max-height: 180px;
+      display: block;
+      margin: 8px auto 14px auto;
+      border-radius: 4px;
+    }
+    .option-item {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      margin-bottom: 8px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      cursor: pointer;
+      background: #fdfdfd;
+    }
+    .option-item input {
+      margin-right: 12px;
+      transform: scale(1.2);
+    }
+
+    /* Panel Admin */
+    .admin-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      margin-top: 15px;
+    }
+    .admin-table th, .admin-table td {
+      border: 1px solid #ddd;
+      padding: 6px;
+      text-align: left;
+    }
+    .admin-table th {
+      background: #263238;
+      color: white;
+    }
+
+    /* Pantalla Resultado */
+    .result-box {
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      margin: 20px 0;
+      width: 100%;
+    }
+    .approved { background: #e8f5e9; border: 2px solid #2e7d32; color: #1b5e20; }
+    .failed { background: #ffebee; border: 2px solid #c62828; color: #b71c1c; }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+
+  <!-- ==================== VISTA 1: INICIO ==================== -->
+  <div id="view-home" class="view active">
+    <div class="header">
+      <h1>Dirección Nacional de Bomberos</h1>
+      <h2>Departamento de Protección Contra Incendios</h2>
+      <h3>EVALUACIÓN FINAL DE BRIGADA</h3>
+    </div>
+
+    <!-- Escudo / Logo SVG -->
+    <div class="logo-container">
+      <svg class="logo-icon" viewBox="0 0 24 24">
+        <path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm0 4a3 3 0 0 1 3 3c0 2-2 3.5-3 5.5-1-2-3-3.5-3-5.5a3 3 0 0 1 3-3zm0 13.9c-3.11-1.01-5.5-4.63-5.91-8.5.58.33 1.25.6 1.91.6 1.8 0 3-1.2 4-2.5 1 1.3 2.2 2.5 4 2.5.66 0 1.33-.27 1.91-.6-.41 3.87-2.8 7.49-5.91 8.5z"/>
+      </svg>
+    </div>
+
+    <button class="btn btn-secondary" onclick="openAdminLogin()">ADMINISTRADOR</button>
+    <button class="btn btn-primary" onclick="promptStartEvaluation()">INICIAR EVALUACIÓN</button>
+
+    <div id="qr-section">
+      <p style="font-size: 0.8rem; font-weight: 600; color: #555;">Escanear para acceder en el celular:</p>
+      <div id="qrcode"></div>
+    </div>
+  </div>
+
+  <!-- ==================== VISTA 2: EVALUACIÓN ==================== -->
+  <div id="view-exam" class="view">
+    <div class="header" style="margin-bottom: 12px;">
+      <h2 style="color: var(--primary); font-size: 1rem;">EVALUACIÓN FINAL DE BRIGADA</h2>
+      <p style="font-size: 0.75rem; color: #666;">Responda las 12 preguntas obligatorias</p>
+    </div>
+
+    <!-- Datos Obligatorios -->
+    <div class="form-group">
+      <label for="student-company">EMPRESA *</label>
+      <select id="student-company" class="form-control" onchange="validateForm()">
+        <option value="">Seleccione su Empresa...</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="student-name">NOMBRE Y APELLIDO *</label>
+      <input type="text" id="student-name" class="form-control" placeholder="Ej: Juan Pérez" oninput="validateForm()">
+    </div>
+
+    <div class="form-group">
+      <label for="student-ci">CÉDULA DE IDENTIDAD (sin puntos ni guiones) *</label>
+      <input type="tel" id="student-ci" class="form-control" placeholder="Ej: 41234567" oninput="sanitizeCI(this)">
+    </div>
+
+    <hr style="width: 100%; border: 0; border-top: 1px solid #ddd; margin: 15px 0;">
+
+    <!-- Contenedor dinámico de 12 preguntas -->
+    <div id="questions-container" style="width: 100%;"></div>
+
+    <!-- Botón Finalizar -->
+    <button id="btn-finish" class="btn btn-disabled" disabled onclick="submitExam()">FINALIZAR EVALUACION</button>
+  </div>
+
+  <!-- ==================== VISTA 3: RESULTADOS ==================== -->
+  <div id="view-result" class="view">
+    <div class="header">
+      <h1>Resultado de Evaluación</h1>
+    </div>
+
+    <div id="result-content" class="result-box">
+      <!-- Se llena dinámicamente -->
+    </div>
+
+    <p style="font-style: italic; font-size: 0.9rem; text-align: center; margin: 20px 0; color: #555;">
+      “Trabajar en equipo divide el trabajo y multiplica los resultados.”<br><strong>— Anónimo</strong>
+    </p>
+
+    <button class="btn btn-secondary" onclick="location.reload()">VOLVER AL INICIO</button>
+  </div>
+
+  <!-- ==================== VISTA 4: PANEL ADMIN ==================== -->
+  <div id="view-admin" class="view">
+    <div class="header">
+      <h2 style="color: #333;">PANEL ADMINISTRADOR</h2>
+    </div>
+
+    <div style="width: 100%; text-align: left; margin-bottom: 20px;">
+      <h4 style="font-size: 0.95rem; margin-bottom: 8px;">Gestionar Empresas</h4>
+      <div style="display: flex; gap: 6px; margin-bottom: 10px;">
+        <input type="text" id="new-company-name" class="form-control" placeholder="Nombre empresa">
+        <button class="btn btn-primary" style="width: 90px; margin-bottom: 0;" onclick="addCompany()">AGREGAR</button>
+      </div>
+      <div id="company-list" style="font-size: 0.85rem; max-height: 120px; overflow-y: auto;"></div>
+    </div>
+
+    <div style="width: 100%; text-align: left;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h4 style="font-size: 0.95rem;">Evaluaciones Recibidas</h4>
+        <button onclick="clearResults()" style="color: red; border:none; background:none; font-size:0.75rem; cursor:pointer;">Borrar Historial</button>
+      </div>
+      <div style="overflow-x: auto;">
+        <table class="admin-table" id="results-table">
+          <thead>
+            <tr>
+              <th>Alumno</th>
+              <th>CI</th>
+              <th>Empresa</th>
+              <th>Nota</th>
+              <th>Dictamen</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <button class="btn btn-outline" style="margin-top: 25px;" onclick="switchView('view-home')">CERRAR SESIÓN</button>
+  </div>
+
+</div>
+
+<!-- ==================== MODAL ROJO ALERTA INICIO ==================== -->
+<div id="modal-alert-start" class="modal-overlay">
+  <div class="modal-card">
+    <h4>¡ATENCIÓN!</h4>
+    <p><strong>ESTA EVALUACIÓN SE PUEDE REALIZAR UNA SOLA VEZ POR EQUIPO CELULAR.</strong><br><br>Si está de acuerdo presione INICIAR.</p>
+    <button class="btn btn-primary" onclick="confirmStartExam()">INICIAR</button>
+    <button class="btn btn-outline" onclick="closeModal('modal-alert-start')">CANCELAR</button>
+  </div>
+</div>
+
+<!-- ==================== MODAL ROJO ANTI-COPIA (0 AUTOMÁTICO) ==================== -->
+<div id="modal-alert-cheat" class="modal-overlay">
+  <div class="modal-card" style="border-top-color: #000; background: #ffebee;">
+    <h4 style="color: #b71c1c;">CUESTIONARIO ANULADO</h4>
+    <p style="color: #b71c1c; font-weight: bold;">
+      SI MINIMIZAS ESTA VENTANA O ABRES OTRA APP, EL CUESTIONARIO FINALIZARA CON UNA VALORACION DE CERO.
+    </p>
+    <p>Se ha detectado salida del navegador. Tu examen ha finalizado con calificación 0.</p>
+    <button class="btn btn-primary" onclick="finalizeCheatExam()">ENTENDIDO</button>
+  </div>
+</div>
+
+<script>
+  /* =====================================================================
+     BANCO DE PREGUNTAS (12 BLOQUES)
+     ===================================================================== */
+  const IMG_EXTINTOR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 240'%3E%3Crect x='44' y='10' width='12' height='30' fill='%23666'/%3E%3Cpath d='M30 40 L70 40 L65 55 L35 55 Z' fill='%23333'/%3E%3Cpath d='M25 75 Q25 55 50 55 Q75 55 75 75 L75 210 Q75 225 50 225 Q25 225 25 210 Z' fill='%23d32f2f'/%3E%3Crect x='32' y='100' width='36' height='70' fill='%23fff' stroke='%23333'/%3E%3Ctext x='50' y='130' font-size='9' text-anchor='middle' font-weight='bold' fill='%23000'%3EEXTINTOR%3C/text%3E%3Ctext x='50' y='150' font-size='11' text-anchor='middle' fill='%23d32f2f'%3EABC%3C/text%3E%3Ccircle cx='50' cy='32' r='8' fill='%23bbb' stroke='%23333'/%3E%3Cpath d='M50 40 L85 25' stroke='%23333' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E";
+
+  const questionBank = {
+    1: [
+      {
+        text: "¿Cuáles son los elementos que componen el tetraedro del fuego?",
+        options: [
+          "a. Combustible, Oxígeno, Calor y Proporción.",
+          "b. Madera, Comburente, Calor y Reacción en cadena.",
+          "c. Combustible, Comburente, Calor y Reacción en cadena."
+        ],
+        correct: 2
+      }
+    ],
+    2: [
+      {
+        text: "¿Cómo se le llama a este equipo?",
+        img: IMG_EXTINTOR,
+        options: ["a. Matafuego.", "b. Bomberito.", "c. Extintor.", "d. Apagador de fuego."],
+        correct: 2
+      },
+      {
+        text: "Si en una habitación totalmente cerrada se produce un incendio, al reducirse el nivel de comburente (oxígeno), el incendio automaticamente…",
+        img: IMG_EXTINTOR,
+        options: ["a. Se apaga.", "b. Ingresa en la etapa latente.", "c. Se extingue.", "d. Se potencia."],
+        correct: 1
+      },
+      {
+        text: "La segunda etapa de todo incendio es la etapa…",
+        img: IMG_EXTINTOR,
+        options: ["a. Libre combustion.", "b. Latente.", "c. Incipiente.", "d. Creciente."],
+        correct: 0
+      },
+      {
+        text: "Si se enfrenta a una situación donde el ambiente se comienza a llenar de humo y ya no tiene visibilidad:",
+        options: [
+          "a. Comienza a correr para donde cree que esta la salida.",
+          "b. Adopta una posición que le permita estar próximo al piso y se guía por una pared.",
+          "c. Se agacha y se desplaza velozmente hacia donde cree que esta la salida."
+        ],
+        correct: 1
+      }
+    ],
+    3: [
+      {
+        text: "La forma de transmisión de calor que se da de forma horizontal desde un cuerpo con mayor cantidad de energía a otro de menor cantidad de energía, a través del aire, sin la necesidad de calentar ese medio se llama…",
+        options: ["a. Radiación.", "b. Conducción.", "c. Convección."],
+        correct: 0
+      },
+      {
+        text: "La forma de transmisión de calor que se da por contacto, desde un cuerpo con mayor cantidad de energía a otro de menor cantidad de energía se llama…",
+        options: ["a. Radiación.", "b. Conducción.", "c. Convección."],
+        correct: 1
+      },
+      {
+        text: "La forma de transmisión de calor que se da de forma vertical por el ascenso de gases calientes a capas superiores y descenso de gases más fríos a las capas inferiores se llama…",
+        options: ["a. Radiación.", "b. Conducción.", "c. Convección."],
+        correct: 2
+      }
+    ],
+    4: [
+      {
+        text: "¿A qué estado de agregación del combustible corresponde la CLASE DE FUEGO “A”?",
+        options: ["a. Sólidos.", "b. Líquidos y gases.", "c. Equipos energizados.", "d. Metales especiales."],
+        correct: 0
+      },
+      {
+        text: "¿A qué estado de agregación del combustible corresponde la CLASE DE FUEGO “B”?",
+        options: ["a. Sólidos.", "b. Líquidos y gases.", "c. Equipos energizados.", "d. Metales especiales."],
+        correct: 1
+      },
+      {
+        text: "¿A qué estado de agregación del combustible corresponde la CLASE DE FUEGO “C”?",
+        options: ["a. Sólidos.", "b. Líquidos y gases.", "c. Equipos energizados.", "d. Metales especiales."],
+        correct: 2
+      },
+      {
+        text: "¿A qué estado de agregación del combustible corresponde la CLASE DE FUEGO “D”?",
+        options: ["a. Sólidos.", "b. Líquidos y gases.", "c. Equipos energizados.", "d. Metales especiales."],
+        correct: 3
+      }
+    ],
+    5: [
+      {
+        text: "Cuando a un incendio le quito el combustible, lo intento extinguir por…",
+        options: ["a. Eliminación.", "b. Sofocación.", "c. Enfriamiento.", "d. Inhibición catalítica."],
+        correct: 0
+      },
+      {
+        text: "Cuando a un incendio le quito el comburente (oxígeno), lo intento extinguir por…",
+        options: ["a. Eliminación.", "b. Sofocación.", "c. Enfriamiento.", "d. Inhibición catalítica."],
+        correct: 1
+      },
+      {
+        text: "Cuando a un incendio le arrojo agua, lo intento extinguir por…",
+        options: ["a. Eliminación.", "b. Sofocación.", "c. Enfriamiento.", "d. Inhibición catalítica."],
+        correct: 2
+      },
+      {
+        text: "Cuando a un incendio le corto la reacción en cadena, lo intento extinguir por…",
+        options: ["a. Eliminación.", "b. Sofocación.", "c. Enfriamiento.", "d. Inhibición catalítica."],
+        correct: 3
+      }
+    ],
+    6: [
+      {
+        text: "Lo que determina si estamos frente a un FUEGO o a un INCENDIO, es su tamaño.",
+        options: ["a. VERDADERO", "b. FALSO"],
+        correct: 1
+      },
+      {
+        text: "Lo que determina si estamos frente a un FUEGO o a un INCENDIO, es su color.",
+        options: ["a. VERDADERO", "b. FALSO"],
+        correct: 1
+      },
+      {
+        text: "Lo que determina si estamos frente a un FUEGO o a un INCENDIO, es su control.",
+        options: ["a. VERDADERO", "b. FALSO"],
+        correct: 0
+      }
+    ],
+    7: [
+      {
+        text: "En un rescate quien lidera la operación de RECONOCIMIENTO es el Jefe de Rescate.",
+        options: ["a. VERDADERO", "b. FALSO"],
+        correct: 1
+      },
+      {
+        text: "En un rescate quien lidera la operación de RECONOCIMIENTO es el Rescatista 1.",
+        options: ["a. VERDADERO", "b. FALSO"],
+        correct: 0
+      },
+      {
+        text: "La maniobra de reconocimiento debe realizarse ingresando al lugar con al menos 2 rescatistas.",
+        options: ["a. VERDADERO", "b. FALSO"],
+        correct: 0
+      },
+      {
+        text: "Si cuento con un solo rescatista para realizar la maniobra de reconocimiento, lo ato con una cuerda y la realiza solo.",
+        options: ["a. VERDADERO", "b. FALSO"],
+        correct: 1
+      },
+      {
+        text: "Los rescatistas deben contar con ropa específica para realizar la maniobra de reconocimiento.",
+        options: ["a. VERDADERO", "b. FALSO"],
+        correct: 0
+      },
+      {
+        text: "La cuerda guía debe atarse tanto al Jefe del Rescate como al Rescatista 1, para mayor seguridad.",
+        options: ["a. VERDADERO", "b. FALSO"],
+        correct: 1
+      },
+      {
+        text: "El Rescatista 2 debe estar equipado al igual que el Jefe del Rescate y el Rescatista 1.",
+        options: ["a. VERDADERO", "b. FALSO"],
+        correct: 0
+      }
+    ],
+    8: [
+      {
+        text: "El nudo LLANO sirve para…",
+        options: [
+          "a. Hacer anclajes y subir herramientas.",
+          "b. Unir cuerdas.",
+          "c. Crear lazos que permitan la vinculación de equipos de rescate."
+        ],
+        correct: 1
+      },
+      {
+        text: "El nudo BALLESTRINQUE (AMARRE) sirve para…",
+        options: [
+          "a. Hacer anclajes y subir herramientas.",
+          "b. Unir cuerdas.",
+          "c. Crear lazos que permitan la vinculación de equipos de rescate."
+        ],
+        correct: 0
+      }
+    ],
+    9: [
+      {
+        text: "Para trabajar en un rescate con cuerdas, estas deben ser específicamente cuerdas de rescate.",
+        options: ["a. VERDADERO", "b. FALSO"],
+        correct: 0
+      },
+      {
+        text: "Para trabajar en un rescate con cuerdas, estas pueden ser cuerdas utilitarias.",
+        options: ["a. VERDADERO", "b. FALSO"],
+        correct: 1
+      },
+      {
+        text: "Si tengo una cuerda de rescate y un imprevisto hace que 1 solo día la utilice para atar un pallet en el camión, luego la puedo seguir utilizando como cuerda de rescate.",
+        options: ["a. VERDADERO", "b. FALSO"],
+        correct: 1
+      }
+    ],
+    10: [
+      {
+        text: "La auto evacuación implica trabajar en una conciencia previa basada en 3 puntos: MI PUESTO DE TRABAJO, MI RECORRIDO DE EVACUACIÓN Y MI PUNTO DE ENCUENTRO.",
+        options: ["a. VERDADERO", "b. FALSO"],
+        correct: 0
+      },
+      {
+        text: "La Brigada de Evacuación debe trabajar únicamente luego que ocurre la emergencia, no es necesario que trabajen de forma preventiva.",
+        options: ["a. VERDADERO", "b. FALSO"],
+        correct: 1
+      }
+    ],
+    11: [
+      {
+        text: "Si suena la alarma de evacuación…",
+        options: [
+          "a. Debe correr hacia el punto de control y desde allí llamar a bomberos.",
+          "b. Debe llamar a bomberos y después correr hacia el punto de control.",
+          "c. Debe hacer lo que diga el procedimiento de evacuación."
+        ],
+        correct: 2
+      },
+      {
+        text: "Para identificar los diferentes roles en una evacuación debo utilizar…",
+        options: [
+          "a. Chalecos de colores.",
+          "b. Cascos de colores.",
+          "c. Cualquier código que la empresa establezca."
+        ],
+        correct: 2
+      },
+      {
+        text: "En todo momento debo contar con un listado de…",
+        options: [
+          "a. Todas las personas que están dentro de la empresa, menos los altos cargos.",
+          "b. Todas las personas que están dentro de la empresa y pertenecen a la empresa.",
+          "c. Todas las personas que están dentro de la empresa.",
+          "d. Todas las personas que están dentro de la empresa, menos los que ingresaron por menos de 10 minutos."
+        ],
+        correct: 2
+      }
+    ],
+    12: [
+      {
+        text: "Para detectar áreas críticas dentro de la empresa se deben identificar los PELIGROS y sus RIESGOS ASOCIADOS.",
+        options: ["a. VERDADERO", "b. FALSO"],
+        correct: 0
+      },
+      {
+        text: "Si en el depósito de la empresa hay un charco producto del derrame de un líquido, este representa un...",
+        options: ["a. PELIGRO", "b. RIESGO"],
+        correct: 0
+      },
+      {
+        text: "Si en el depósito de la empresa hay un charco producto del derrame de un líquido, al pasar caminando por sobre él, representa un...",
+        options: ["a. PELIGRO", "b. RIESGO"],
+        correct: 1
+      }
+    ]
+  };
+
+  /* =====================================================================
+     ESTADO DE LA APLICACIÓN
+     ===================================================================== */
+  let activeQuestions = []; // Las 12 seleccionadas
+  let examInProgress = false;
+
+  // Inicialización de Empresas y Resultados
+  if (!localStorage.getItem('dnb_companies')) {
+    const defaultCompanies = ["Empresa Modelo S.A.", "Logística del Sur", "Industrias Químicas S.R.L."];
+    localStorage.setItem('dnb_companies', JSON.stringify(defaultCompanies));
+  }
+  if (!localStorage.getItem('dnb_evaluations')) {
+    localStorage.setItem('dnb_evaluations', JSON.stringify([]));
+  }
+
+  // Generar código QR de la URL actual al cargar
+  window.addEventListener('DOMContentLoaded', () => {
+    new QRCode(document.getElementById("qrcode"), {
+      text: window.location.href,
+      width: 140,
+      height: 140
+    });
+    loadCompaniesInSelect();
+  });
+
+  /* =====================================================================
+     DETECCIÓN ANTI-COPIA / SALIDA DE LA APP
+     ===================================================================== */
+  document.addEventListener("visibilitychange", () => {
+    if (examInProgress && document.hidden) {
+      triggerCheatPenalty();
+    }
+  });
+
+  window.addEventListener("blur", () => {
+    if (examInProgress) {
+      triggerCheatPenalty();
+    }
+  });
+
+  function triggerCheatPenalty() {
+    examInProgress = false;
+    document.getElementById('modal-alert-cheat').style.display = 'flex';
+  }
+
+  function finalizeCheatExam() {
+    closeModal('modal-alert-cheat');
+    const name = document.getElementById('student-name').value.trim() || "No identificado (Anulado)";
+    const ci = document.getElementById('student-ci').value.trim() || "S/D";
+    const company = document.getElementById('student-company').value || "S/D";
+
+    saveResult(name, ci, company, 0, "REPROBADO (SALIDA DE APLICACIÓN)");
+    localStorage.setItem('dnb_device_completed', 'true');
+    renderResultView(0, "REPROBADO (CERO POR MINIMIZAR LA VENTANA O CAMBIAR DE APLICACIÓN)");
+  }
+
+  /* =====================================================================
+     NAVEGACIÓN ENTRE VISTAS
+     ===================================================================== */
+  function switchView(viewId) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById(viewId).classList.add('active');
+    window.scrollTo(0,0);
+  }
+
+  function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+  }
+
+  /* =====================================================================
+     FLUJO DEL ALUMNO
+     ===================================================================== */
+  function promptStartEvaluation() {
+    if (localStorage.getItem('dnb_device_completed') === 'true') {
+      alert("ESTE DISPOSITIVO YA HA COMPLETADO LA EVALUACIÓN Y NO TIENE PERMITIDO OTRO INTENTO.");
+      return;
+    }
+    document.getElementById('modal-alert-start').style.display = 'flex';
+  }
+
+  function confirmStartExam() {
+    closeModal('modal-alert-start');
+    setupExam();
+    switchView('view-exam');
+    examInProgress = true;
+  }
+
+  function setupExam() {
+    loadCompaniesInSelect();
+    activeQuestions = [];
+    const container = document.getElementById('questions-container');
+    container.innerHTML = "";
+
+    // Elegir 1 pregunta aleatoria de cada uno de los 12 bloques
+    for (let i = 1; i <= 12; i++) {
+      const block = questionBank[i];
+      const randomIndex = Math.floor(Math.random() * block.length);
+      const q = block[randomIndex];
+      activeQuestions.push(q);
+
+      const card = document.createElement('div');
+      card.className = "question-card";
+
+      let imgHtml = q.img ? `<img src="${q.img}" class="question-img" alt="Extintor">` : '';
+
+      let optionsHtml = q.options.map((opt, optIndex) => `
+        <label class="option-item">
+          <input type="radio" name="q_${i}" value="${optIndex}" onchange="validateForm()">
+          <span>${opt}</span>
+        </label>
+      `).join('');
+
+      card.innerHTML = `
+        <div class="question-title">Bloque ${i}: ${q.text}</div>
+        ${imgHtml}
+        ${optionsHtml}
+      `;
+      container.appendChild(card);
+    }
+  }
+
+  function sanitizeCI(input) {
+    input.value = input.value.replace(/\D/g, ''); // Remover puntos y guiones
+    validateForm();
+  }
+
+  function validateForm() {
+    const comp = document.getElementById('student-company').value;
+    const name = document.getElementById('student-name').value.trim();
+    const ci = document.getElementById('student-ci').value.trim();
+
+    // Validar si las 12 preguntas están respondidas
+    let allAnswered = true;
+    for (let i = 1; i <= 12; i++) {
+      const selected = document.querySelector(`input[name="q_${i}"]:checked`);
+      if (!selected) {
+        allAnswered = false;
+        break;
+      }
+    }
+
+    const btn = document.getElementById('btn-finish');
+    if (comp && name && ci && allAnswered) {
+      btn.disabled = false;
+      btn.className = "btn btn-success";
+    } else {
+      btn.disabled = true;
+      btn.className = "btn btn-disabled";
+    }
+  }
+
+  function submitExam() {
+    examInProgress = false; // Detener chequeo de salida
+
+    let score = 0;
+    for (let i = 1; i <= 12; i++) {
+      const selected = document.querySelector(`input[name="q_${i}"]:checked`);
+      if (selected && parseInt(selected.value) === activeQuestions[i-1].correct) {
+        score++;
+      }
+    }
+
+    let status = "";
+    if (score < 7) {
+      status = "NO APROBADO";
+    } else if (score === 7 || score === 8) {
+      status = "APROBADO";
+    } else if (score >= 9 && score <= 11) {
+      status = "APROBADO CON UNA MUY BUENA CALIFICACION";
+    } else if (score === 12) {
+      status = "APROBADO EXCELENTE";
+    }
+
+    const name = document.getElementById('student-name').value.trim();
+    const ci = document.getElementById('student-ci').value.trim();
+    const company = document.getElementById('student-company').value;
+
+    saveResult(name, ci, company, score, status);
+    localStorage.setItem('dnb_device_completed', 'true');
+    renderResultView(score, status);
+  }
+
+  function renderResultView(score, status) {
+    const isPass = score >= 7;
+    const container = document.getElementById('result-content');
+    container.className = `result-box ${isPass ? 'approved' : 'failed'}`;
+    container.innerHTML = `
+      <h2 style="font-size: 1.6rem; margin-bottom: 10px;">${score} / 12</h2>
+      <h3 style="font-size: 1.1rem; text-transform: uppercase;">${status}</h3>
+      <p style="font-size: 0.85rem; margin-top: 8px;">Aciertos requeridos para aprobar: mínimo 7.</p>
+    `;
+    switchView('view-result');
+  }
+
+  function saveResult(name, ci, company, score, status) {
+    const records = JSON.parse(localStorage.getItem('dnb_evaluations') || '[]');
+    records.push({ name, ci, company, score, status, date: new Date().toLocaleString() });
+    localStorage.setItem('dnb_evaluations', JSON.stringify(records));
+  }
+
+  /* =====================================================================
+     ADMINISTRACIÓN
+     ===================================================================== */
+  function openAdminLogin() {
+    const user = prompt("Ingrese Usuario Administrador:");
+    if (user !== "44357516") {
+      alert("Usuario incorrecto.");
+      return;
+    }
+    const pass = prompt("Ingrese Contraseña:");
+    if (pass !== "3640381") {
+      alert("Contraseña incorrecta.");
+      return;
+    }
+    renderAdminPanel();
+    switchView('view-admin');
+  }
+
+  function loadCompaniesInSelect() {
+    const list = JSON.parse(localStorage.getItem('dnb_companies') || '[]');
+    const select = document.getElementById('student-company');
+    select.innerHTML = '<option value="">Seleccione su Empresa...</option>';
+    list.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c;
+      opt.textContent = c;
+      select.appendChild(opt);
+    });
+  }
+
+  function renderAdminPanel() {
+    // Empresas
+    const compList = JSON.parse(localStorage.getItem('dnb_companies') || '[]');
+    const cContainer = document.getElementById('company-list');
+    cContainer.innerHTML = compList.map((c, i) => `
+      <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #eee;">
+        <span>${c}</span>
+        <button onclick="removeCompany(${i})" style="color:red; border:none; background:none; cursor:pointer;">Eliminar</button>
+      </div>
+    `).join('') || '<p style="color:#888;">No hay empresas registradas.</p>';
+
+    // Tabla de Resultados
+    const results = JSON.parse(localStorage.getItem('dnb_evaluations') || '[]');
+    const tbody = document.querySelector('#results-table tbody');
+    tbody.innerHTML = results.map(r => `
+      <tr>
+        <td>${r.name}</td>
+        <td>${r.ci}</td>
+        <td>${r.company}</td>
+        <td><strong>${r.score}/12</strong></td>
+        <td>${r.status}</td>
+      </tr>
+    `).join('') || '<tr><td colspan="5" style="text-align:center;">No hay exámenes rendidos aún.</td></tr>';
+  }
+
+  function addCompany() {
+    const input = document.getElementById('new-company-name');
+    const val = input.value.trim();
+    if (!val) return;
+    const list = JSON.parse(localStorage.getItem('dnb_companies') || '[]');
+    list.push(val);
+    localStorage.setItem('dnb_companies', JSON.stringify(list));
+    input.value = "";
+    renderAdminPanel();
+    loadCompaniesInSelect();
+  }
+
+  function removeCompany(index) {
+    const list = JSON.parse(localStorage.getItem('dnb_companies') || '[]');
+    list.splice(index, 1);
+    localStorage.setItem('dnb_companies', JSON.stringify(list));
+    renderAdminPanel();
+    loadCompaniesInSelect();
+  }
+
+  function clearResults() {
+    if (confirm("¿Desea borrar todas las evaluaciones y desbloquear este dispositivo para nuevas pruebas?")) {
+      localStorage.setItem('dnb_evaluations', JSON.stringify([]));
+      localStorage.removeItem('dnb_device_completed');
+      renderAdminPanel();
+      alert("Historial reiniciado.");
+    }
+  }
+</script>
+
+</body>
+</html>
