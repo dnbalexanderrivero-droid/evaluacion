@@ -600,27 +600,26 @@
     <div class="header">
       <h2 style="color: #333;">PANEL ADMINISTRADOR</h2>
       <p style="font-size: 0.75rem; color: #666;">Dirección Nacional de Bomberos</p>
-      <!-- Indicador de Nube -->
       <div id="cloud-status-badge" style="font-size:0.75rem; padding:4px 10px; border-radius:15px; background:#e8f5e9; color:#2e7d32; display:inline-block; margin-top:5px; font-weight:bold;">
         🟢 Conectado a la Nube en Tiempo Real
       </div>
     </div>
 
-    <!-- 1. Alta de Empresas -->
+    <!-- 1. Alta de Empresas con Ejemplos Actualizados -->
     <div class="admin-section">
       <h4>1. Registrar Nueva Empresa / Curso</h4>
       <div class="form-group">
-        <label>Nombre de la Empresa *</label>
-        <input type="text" id="new-comp-name" class="form-control" placeholder="Ej: Acodike Supergás S.A.">
+        <label>Razón Social *</label>
+        <input type="text" id="new-comp-name" class="form-control" placeholder="Ej: Razón Social">
       </div>
       <div style="display:flex; gap:6px;">
         <div class="form-group" style="flex:1;">
           <label>Nº de Curso</label>
-          <input type="text" id="new-comp-course" class="form-control" placeholder="Ej: 04/2026">
+          <input type="text" id="new-comp-course" class="form-control" placeholder="Ej: MXXXX/202X">
         </div>
         <div class="form-group" style="flex:1;">
           <label>Nº de Trámite</label>
-          <input type="text" id="new-comp-tramite" class="form-control" placeholder="Ej: TR-89412">
+          <input type="text" id="new-comp-tramite" class="form-control" placeholder="Ej: 202X/4/24/S/XX/XXXXXX">
         </div>
       </div>
       <div style="display:flex; gap:6px;">
@@ -658,7 +657,7 @@
       </div>
     </div>
 
-    <!-- 3. Evaluaciones Recibidas (En Vivo desde los Celulares) -->
+    <!-- 3. Evaluaciones Recibidas -->
     <div class="admin-section" style="margin-top: 15px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
         <h4>3. Evaluaciones Recibidas (En Vivo)</h4>
@@ -689,7 +688,7 @@
       </div>
     </div>
 
-    <!-- 4. Verificación Manual por Código -->
+    <!-- 4. Verificación y Auditoría de Certificados -->
     <div class="admin-section" style="border-bottom:none;">
       <h4 style="color: #b8860b;">4. Auditoría y Verificación de Certificados</h4>
       <p style="font-size: 0.75rem; color: #666; margin-bottom: 8px;">
@@ -703,7 +702,7 @@
     <button class="btn btn-outline" style="margin-top: 15px;" onclick="switchView('view-home')">CERRAR SESIÓN</button>
   </div>
 
-  <!-- ==================== VISTA 5: VERIFICACIÓN OFICIAL (PANTALLA DE DESTINO DEL QR) ==================== -->
+  <!-- ==================== VISTA 5: VERIFICACIÓN OFICIAL ==================== -->
   <div id="view-verify" class="view">
     <div class="header">
       <div class="logo-container">
@@ -990,7 +989,6 @@
 </div>
 
 <script>
-  // Enlace oficial único de internet para el sistema de verificación
   const OFFICIAL_ONLINE_URL = "https://dnbalexanderrivero-droid.github.io/evaluacion/";
 
   /* =====================================================================
@@ -1014,7 +1012,6 @@
     console.warn("Modo local o Firebase no disponible:", e);
   }
 
-  // Generador de URL oficial ligera para el QR (Se lee en 0.1s desde cualquier celular)
   function buildVerificationUrl(data) {
     const params = new URLSearchParams({
       v: data.type === 'company' ? 'emp' : 'ind',
@@ -1123,7 +1120,6 @@
     initOfficialLogo();
     checkUrlVerification();
 
-    // QR de acceso en portada
     const qEl = document.getElementById("qrcode");
     if (qEl) {
       qEl.innerHTML = "";
@@ -1138,7 +1134,6 @@
 
     loadCompaniesInSelect();
 
-    // Sincronización en vivo con Firebase
     if (firebaseDb) {
       firebaseDb.ref('companies').on('value', snap => {
         const val = snap.val();
@@ -1157,18 +1152,10 @@
           localStorage.setItem('dnb_evaluations', JSON.stringify(list));
           renderAdminResults();
         }
-      }, err => {
-        const badge = document.getElementById('cloud-status-badge');
-        if (badge) {
-          badge.textContent = "⚠️ Nube: Requiere abrir Reglas en Firebase";
-          badge.style.background = "#ffebee";
-          badge.style.color = "#c62828";
-        }
       });
     }
   });
 
-  // Verificación directa mediante escaneo de QR (Lectura inmediata de URL)
   function checkUrlVerification() {
     const params = new URLSearchParams(window.location.search);
     if (params.has('v') && params.has('id')) {
@@ -1440,7 +1427,6 @@
 
       registerIssuedCert(certPayload);
 
-      // Generar URL directa que abre Safari/Chrome en cualquier celular
       const verifyUrl = buildVerificationUrl(certPayload);
       const qrContainer = document.getElementById('cert-pdf-qrcode');
       qrContainer.innerHTML = '';
@@ -1507,7 +1493,6 @@
     });
   }
 
-  // Guardado local + envío en vivo a Firebase Cloud
   function saveResult(name, ci, company, score, status, certId) {
     const now = new Date();
     const formattedDate = `${now.toLocaleDateString()} ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
@@ -1614,7 +1599,7 @@
   function addCompanyWithMeta() {
     const name = document.getElementById('new-comp-name').value.trim();
     if (!name) {
-      alert("Por favor ingrese el nombre de la empresa.");
+      alert("Por favor ingrese la Razón Social.");
       return;
     }
 
