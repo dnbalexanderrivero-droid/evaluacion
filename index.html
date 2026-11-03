@@ -1,24 +1,12 @@
-  apiKey: "AIzaSyBjP0jRCqgcLsTSrruUyR2Sg8YDyCsUEMU",
-  authDomain: "evaluacion-bomberos.firebaseapp.com",
-  databaseURL: "https://evaluacion-bomberos-default-rtdb.firebaseio.com",
-  projectId: "evaluacion-bomberos",
-  storageBucket: "evaluacion-bomberos.firebasestorage.app",
-  messagingSenderId: "312467343862",
-  appId: "1:312467343862:web:55739d178ab6cce86d9fd7"
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>DNB - Evaluación Brigadas de Emergencia</title>
-  
-  <!-- Firebase SDK v8 (Tiempo real) -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
-  <!-- Generador QR -->
+  <!-- Librerías Externas -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     :root {
       --primary: #c00d0d;
@@ -29,94 +17,496 @@
       --card-bg: #ffffff;
       --text: #222222;
       --border: #dcdcdc;
+      --gold: #b8860b;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background: var(--bg); color: var(--text); display: flex; justify-content: center; min-height: 100vh; padding: 10px; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 10px;
+    }
 
     .app-container {
-      width: 100%; max-width: 550px; background: var(--card-bg); border-radius: 12px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow: hidden; display: flex; flex-direction: column; position: relative;
+      width: 100%;
+      max-width: 500px;
+      background: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
     }
 
-    .view { display: none; padding: 20px; flex-direction: column; align-items: center; }
-    .view.active { display: flex; }
+    .view {
+      display: none;
+      padding: 20px;
+      flex-direction: column;
+      align-items: center;
+    }
+    .view.active {
+      display: flex;
+    }
 
-    .header { text-align: center; margin-bottom: 15px; }
-    .header h1 { font-size: 1.05rem; color: var(--primary); text-transform: uppercase; font-weight: 800; }
-    .header h2 { font-size: 0.85rem; color: #555; margin-top: 4px; font-weight: 600; }
-    .header h3 { font-size: 0.95rem; color: var(--secondary); margin-top: 6px; font-weight: 700; border-bottom: 2px solid var(--primary); padding-bottom: 4px; display: inline-block; }
+    .header {
+      text-align: center;
+      margin-bottom: 15px;
+      width: 100%;
+    }
+    .header h1 {
+      font-size: 1.05rem;
+      color: var(--primary);
+      text-transform: uppercase;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+    }
+    .header h2 {
+      font-size: 0.85rem;
+      color: #555;
+      margin-top: 4px;
+      font-weight: 600;
+    }
+    .header h3 {
+      font-size: 0.95rem;
+      color: var(--secondary);
+      margin-top: 6px;
+      font-weight: 700;
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 5px;
+      display: inline-block;
+    }
 
-    .logo-container { margin: 15px 0; display: flex; justify-content: center; }
-    .logo-icon { width: 75px; height: 75px; fill: var(--primary); }
+    .logo-container {
+      margin: 10px 0 15px 0;
+      display: flex;
+      justify-content: center;
+    }
+    .main-logo-img {
+      width: 120px;
+      height: 120px;
+      object-fit: contain;
+      filter: drop-shadow(0 3px 6px rgba(0,0,0,0.3));
+    }
 
     .btn {
-      width: 100%; padding: 12px; font-size: 0.95rem; font-weight: bold; border: none; border-radius: 8px;
-      cursor: pointer; margin-bottom: 10px; text-transform: uppercase; transition: all 0.2s ease;
-      display: flex; justify-content: center; align-items: center; text-align: center; text-decoration: none;
+      width: 100%;
+      padding: 13px;
+      font-size: 0.95rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      transition: all 0.2s ease;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      text-decoration: none;
     }
     .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:active { background: var(--primary-dark); }
     .btn-secondary { background: #37474f; color: white; }
     .btn-success { background: var(--accent) !important; color: white !important; cursor: pointer !important; }
     .btn-disabled { background: #cccccc !important; color: #777777 !important; cursor: not-allowed !important; }
     .btn-outline { background: transparent; border: 2px solid #555; color: #333; }
-    .btn-email { background: #0288d1; color: white; }
-    .btn-excel { background: #1e7e34; color: white; font-size: 0.85rem; padding: 8px 12px; }
+    .btn-gold { background: #b8860b; color: white; }
+    .btn-sm { width: auto; padding: 6px 12px; font-size: 0.8rem; margin-bottom: 0; }
 
-    #qr-section { margin-top: 15px; padding: 15px; background: #fafafa; border-radius: 8px; text-align: center; border: 1px dashed #bbb; }
-    #qrcode { display: flex; justify-content: center; margin-top: 10px; }
+    #qr-section {
+      margin-top: 15px;
+      padding: 15px;
+      background: #fafafa;
+      border-radius: 8px;
+      text-align: center;
+      border: 1px dashed #bbb;
+      width: 100%;
+    }
+    #qrcode {
+      display: flex;
+      justify-content: center;
+      margin-top: 10px;
+    }
 
     .modal-overlay {
-      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; padding: 20px;
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
     }
-    .modal-card { background: #fff; border-radius: 12px; border-top: 8px solid var(--primary); padding: 22px; max-width: 400px; width: 100%; text-align: center; }
-    .modal-card h4 { color: var(--primary); font-size: 1.2rem; margin-bottom: 12px; }
-    .modal-card p { font-size: 0.95rem; color: #333; margin-bottom: 20px; line-height: 1.4; }
+    .modal-card {
+      background: #ffffff;
+      border-radius: 12px;
+      border-top: 8px solid var(--primary);
+      padding: 22px;
+      max-width: 440px;
+      width: 100%;
+      text-align: center;
+    }
+    .modal-card h4 {
+      color: var(--primary);
+      font-size: 1.2rem;
+      margin-bottom: 12px;
+    }
+    .modal-card p {
+      font-size: 0.95rem;
+      color: #333;
+      margin-bottom: 15px;
+      line-height: 1.4;
+    }
 
-    .form-group { width: 100%; margin-bottom: 15px; text-align: left; }
-    .form-group label { display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; color: #333; }
-    .form-control { width: 100%; padding: 11px; font-size: 0.95rem; border: 1.5px solid var(--border); border-radius: 6px; outline: none; background: #fff; }
-    .form-control:focus { border-color: var(--primary); }
+    .form-group {
+      width: 100%;
+      margin-bottom: 12px;
+      text-align: left;
+    }
+    .form-group label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: bold;
+      margin-bottom: 4px;
+      color: #333;
+    }
+    .form-control {
+      width: 100%;
+      padding: 10px;
+      font-size: 0.95rem;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      outline: none;
+      background: #fff;
+    }
+    .form-control:focus {
+      border-color: var(--primary);
+    }
 
-    .question-card { width: 100%; background: #ffffff; border: 1px solid #e0e0e0; border-left: 5px solid var(--primary); border-radius: 8px; padding: 14px; margin-bottom: 16px; text-align: left; }
-    .question-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 10px; line-height: 1.35; }
-    .question-img { max-width: 120px; max-height: 160px; display: block; margin: 8px auto 14px auto; }
-    .option-item { display: flex; align-items: center; padding: 10px; margin-bottom: 8px; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; background: #fdfdfd; }
-    .option-item input { margin-right: 12px; transform: scale(1.2); }
+    .question-card {
+      width: 100%;
+      background: #ffffff;
+      border: 1px solid #e0e0e0;
+      border-left: 5px solid var(--primary);
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 16px;
+      text-align: left;
+    }
+    .question-title {
+      font-size: 0.92rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      line-height: 1.35;
+    }
+    .question-img {
+      max-width: 120px;
+      max-height: 160px;
+      display: block;
+      margin: 8px auto 14px auto;
+      border-radius: 4px;
+    }
+    .option-item {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      margin-bottom: 8px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      cursor: pointer;
+      background: #fdfdfd;
+      font-size: 0.9rem;
+    }
+    .option-item input {
+      margin-right: 10px;
+      transform: scale(1.2);
+    }
 
-    /* ESTADÍSTICAS */
-    .stats-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 100%; margin: 15px 0; }
-    .stat-card { background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; text-align: center; }
-    .stat-number { font-size: 1.4rem; font-weight: 800; }
-    .stat-label { font-size: 0.75rem; text-transform: uppercase; color: #666; margin-top: 3px; }
+    .admin-section {
+      width: 100%;
+      margin-bottom: 20px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 15px;
+    }
+    .admin-section h4 {
+      font-size: 0.95rem;
+      color: var(--secondary);
+      margin-bottom: 10px;
+    }
+    .admin-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+      margin-top: 10px;
+    }
+    .admin-table th, .admin-table td {
+      border: 1px solid #ddd;
+      padding: 7px 6px;
+      text-align: left;
+    }
+    .admin-table th {
+      background: #263238;
+      color: white;
+    }
 
-    .admin-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 10px; }
-    .admin-table th, .admin-table td { border: 1px solid #ddd; padding: 6px; text-align: left; }
-    .admin-table th { background: #263238; color: white; }
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: bold;
+    }
+    .badge-success { background: #e8f5e9; color: #2e7d32; }
+    .badge-muted { background: #eeeeee; color: #777; }
 
-    .company-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
-
-    /* CERTIFICADO */
-    .result-box { border-radius: 10px; padding: 18px; text-align: center; margin: 15px 0; width: 100%; }
+    .result-box {
+      border-radius: 10px;
+      padding: 20px 15px;
+      text-align: center;
+      margin: 15px 0;
+      width: 100%;
+    }
     .approved { background: #e8f5e9; border: 2px solid #2e7d32; color: #1b5e20; }
     .failed { background: #ffebee; border: 2px solid #c62828; color: #b71c1c; }
 
-    .certificate-card { width: 100%; background: #fff; border: 6px double #8b0000; padding: 25px 20px; text-align: center; margin-bottom: 15px; }
-    .cert-sub { font-size: 0.75rem; color: #555; text-transform: uppercase; margin-bottom: 3px; }
-    .cert-title { font-size: 1.2rem; font-weight: 800; color: #8b0000; margin: 10px 0; }
-    .cert-name { font-size: 1.15rem; font-weight: bold; color: #111; text-decoration: underline; margin: 8px 0; }
-    .cert-body { font-size: 0.85rem; line-height: 1.4; color: #333; margin: 10px 0; }
-    .cert-badge { display: inline-block; padding: 4px 10px; background: #e8f5e9; color: #1b5e20; border: 1px solid #2e7d32; border-radius: 20px; font-weight: bold; font-size: 0.8rem; margin: 8px 0; }
-    .cert-signatures { margin-top: 25px; display: flex; justify-content: space-around; font-size: 0.75rem; color: #444; }
-    .cert-signature-line { border-top: 1px solid #444; width: 110px; margin-bottom: 4px; }
+    .stars-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 3px;
+      margin: 10px 0;
+      flex-wrap: wrap;
+    }
+    .star-svg {
+      width: 25px;
+      height: 25px;
+    }
+    .star-gold {
+      fill: #fbc02d;
+      stroke: #f57f17;
+      stroke-width: 1;
+      filter: drop-shadow(0 2px 3px rgba(251, 192, 45, 0.45));
+    }
+    .star-grey {
+      fill: #dcdcdc;
+      stroke: #b0b0b0;
+      stroke-width: 1;
+    }
 
-    @media print {
-      body { background: white; padding: 0; }
-      .app-container { box-shadow: none; max-width: 100%; }
-      .header, .btn, #qr-section, .modal-overlay, #result-content, #result-quote { display: none !important; }
-      #certificate-wrapper { display: block !important; width: 100% !important; margin: 0 !important; }
-      .certificate-card { border: 8px double #8b0000; padding: 40px 20px; }
+    .cert-actions {
+      width: 100%;
+      margin: 10px 0;
+      padding: 15px;
+      background: #fdfdfd;
+      border: 1.5px dashed #2e7d32;
+      border-radius: 8px;
+    }
+    .cert-actions h4 {
+      font-size: 0.95rem;
+      color: #1b5e20;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      font-weight: 800;
+    }
+
+    /* CERTIFICADO A4 EXACTO, CENTRADO Y SIN BORDES BLANCOS */
+    #certificate-render-wrapper, #company-cert-render-wrapper {
+      position: absolute;
+      left: -9999px;
+      top: -9999px;
+    }
+
+    .certificate-page {
+      width: 1115px;
+      height: 785px;
+      max-width: 1115px;
+      max-height: 785px;
+      background: #ffffff;
+      padding: 14px 20px;
+      box-sizing: border-box;
+      position: relative;
+      color: #1a1a1a;
+      font-family: Arial, Helvetica, sans-serif;
+      overflow: hidden;
+      page-break-inside: avoid !important;
+    }
+
+    .cert-outer-border {
+      width: 100%;
+      height: 100%;
+      border: 5px double #8b0000;
+      padding: 24px 35px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      text-align: center;
+      position: relative;
+      background: #ffffff;
+    }
+
+    .cert-header-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      width: 100%;
+    }
+
+    .cert-logo-img {
+      width: 82px;
+      height: 82px;
+      object-fit: contain;
+    }
+
+    .cert-header h1 {
+      font-size: 22px;
+      color: #8b0000;
+      margin-bottom: 4px;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+    }
+    .cert-header h2 {
+      font-size: 14px;
+      color: #333333;
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+    .cert-header h3 {
+      font-size: 15px;
+      color: #111111;
+      display: inline-block;
+      border-bottom: 2px solid #b8860b;
+      padding-bottom: 3px;
+      font-weight: 700;
+    }
+
+    .cert-title-diploma {
+      font-size: 32px;
+      font-weight: 900;
+      color: #8b0000;
+      margin-top: 8px;
+      letter-spacing: 1.5px;
+    }
+
+    .cert-body {
+      font-size: 16.5px;
+      line-height: 1.55;
+      color: #222;
+      max-width: 950px;
+      margin: 0 auto;
+    }
+
+    .cert-entity-name {
+      font-size: 28px;
+      font-weight: 900;
+      color: #111111;
+      margin: 10px auto;
+      border-bottom: 2px solid #8b0000;
+      display: inline-block;
+      padding: 0 45px 5px 45px;
+      letter-spacing: 0px !important;
+      word-spacing: 6px !important;
+      white-space: nowrap;
+    }
+
+    .cert-details-grid {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      margin: 12px 0;
+      font-size: 15px;
+      color: #333;
+    }
+
+    .cert-security-footer {
+      width: 100%;
+      border-top: 1.5px solid #dcdcdc;
+      padding-top: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      text-align: left;
+    }
+
+    .cert-qr-box {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .cert-verification-text {
+      max-width: 500px;
+      font-size: 11.5px;
+      color: #555;
+      line-height: 1.4;
+    }
+
+    .cert-code-badge {
+      font-family: "Courier New", Courier, monospace;
+      font-size: 14px;
+      font-weight: 800;
+      color: #8b0000;
+      background: #fbf2f2;
+      border: 1px dashed #8b0000;
+      padding: 6px 14px;
+      border-radius: 4px;
+      letter-spacing: 1px;
+      text-align: right;
+    }
+
+    .verify-card {
+      width: 100%;
+      background: #ffffff;
+      border-radius: 8px;
+      border: 1px solid #dcdcdc;
+      padding: 18px;
+      text-align: left;
+      margin-top: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .verify-badge {
+      display: inline-flex;
+      align-items: center;
+      background: #e8f5e9;
+      color: #2e7d32;
+      border: 1.5px solid #2e7d32;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.88rem;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+    .verify-item {
+      margin-bottom: 8px;
+      font-size: 0.88rem;
+      border-bottom: 1px solid #f0f0f0;
+      padding-bottom: 6px;
+    }
+    .verify-item span {
+      display: block;
+      font-size: 0.72rem;
+      color: #777;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+    .verify-item strong {
+      color: #222;
+      font-size: 0.95rem;
     }
   </style>
 </head>
@@ -124,7 +514,7 @@
 
 <div class="app-container">
 
-  <!-- VISTA 1: INICIO -->
+  <!-- ==================== VISTA 1: INICIO (LIMPIA Y DIRECTA) ==================== -->
   <div id="view-home" class="view active">
     <div class="header">
       <h1>Dirección Nacional de Bomberos</h1>
@@ -132,32 +522,31 @@
       <h3>EVALUACIÓN FINAL DE BRIGADA</h3>
     </div>
 
+    <!-- ESCUDO OFICIAL PERMANENTE -->
     <div class="logo-container">
-      <svg class="logo-icon" viewBox="0 0 24 24">
-        <path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm0 4a3 3 0 0 1 3 3c0 2-2 3.5-3 5.5-1-2-3-3.5-3-5.5a3 3 0 0 1 3-3zm0 13.9c-3.11-1.01-5.5-4.63-5.91-8.5.58.33 1.25.6 1.91.6 1.8 0 3-1.2 4-2.5 1 1.3 2.2 2.5 4 2.5.66 0 1.33-.27 1.91-.6-.41 3.87-2.8 7.49-5.91 8.5z"/>
-      </svg>
+      <img id="home-logo" class="main-logo-img" alt="Escudo Bomberos">
     </div>
 
-    <button class="btn btn-secondary" onclick="openAdminLogin()">ADMINISTRADOR</button>
+    <button class="btn btn-secondary" onclick="openAdminModal()">ADMINISTRADOR</button>
     <button class="btn btn-primary" onclick="promptStartEvaluation()">INICIAR EVALUACIÓN</button>
 
     <div id="qr-section">
-      <p style="font-size: 0.8rem; font-weight: 600; color: #555;">Escanear para rendir en el celular:</p>
+      <p style="font-size: 0.8rem; font-weight: 600; color: #555;">Escanear para acceder desde el celular:</p>
       <div id="qrcode"></div>
     </div>
   </div>
 
-  <!-- VISTA 2: EVALUACIÓN -->
+  <!-- ==================== VISTA 2: EVALUACIÓN ==================== -->
   <div id="view-exam" class="view">
     <div class="header" style="margin-bottom: 12px;">
       <h2 style="color: var(--primary); font-size: 1rem;">EVALUACIÓN FINAL DE BRIGADA</h2>
-      <p style="font-size: 0.75rem; color: #666;">Responda las 12 preguntas obligatorias</p>
+      <p style="font-size: 0.75rem; color: #666;">Complete sus datos y responda las 12 preguntas</p>
     </div>
 
     <div class="form-group">
       <label for="student-company">EMPRESA *</label>
       <select id="student-company" class="form-control" onchange="validateForm()">
-        <option value="">Cargando empresas...</option>
+        <option value="">Seleccione su Empresa...</option>
       </select>
     </div>
 
@@ -172,13 +561,11 @@
     </div>
 
     <hr style="width: 100%; border: 0; border-top: 1px solid #ddd; margin: 15px 0;">
-
     <div id="questions-container" style="width: 100%;"></div>
-
     <button id="btn-finish" class="btn btn-disabled" disabled onclick="submitExam()">FINALIZAR EVALUACION</button>
   </div>
 
-  <!-- VISTA 3: RESULTADOS Y CERTIFICADO -->
+  <!-- ==================== VISTA 3: RESULTADOS ==================== -->
   <div id="view-result" class="view">
     <div class="header">
       <h1>Resultado de Evaluación</h1>
@@ -186,89 +573,95 @@
 
     <div id="result-content" class="result-box"></div>
 
-    <div id="certificate-wrapper" style="width: 100%; display: none;">
-      <div class="certificate-card" id="printable-certificate">
-        <p class="cert-sub">Dirección Nacional de Bomberos</p>
-        <p class="cert-sub">Depto. de Protección Contra Incendios</p>
-        <h2 class="cert-title">CONSTANCIA DE APROBACIÓN</h2>
-        <p class="cert-body">Se certifica que:</p>
-        <p class="cert-name" id="cert-student-name">JUAN PÉREZ</p>
-        <p class="cert-body">C.I.: <span id="cert-student-ci" style="font-weight:bold;">12345678</span></p>
-        <p class="cert-body">Perteneciente a la empresa <strong id="cert-student-company">EMPRESA</strong>, ha aprobado satisfactoriamente la evaluación teórica de <strong>Formación de Brigadas de Emergencia</strong>.</p>
-        
-        <div><span class="cert-badge" id="cert-status-badge">APROBADO</span></div>
-        <p style="font-size: 0.75rem; color: #666; margin-top: 6px;">Fecha de emisión: <span id="cert-date">--/--/----</span></p>
-
-        <div class="cert-signatures">
-          <div><div class="cert-signature-line"></div><span>Instructor DNB</span></div>
-          <div><div class="cert-signature-line"></div><span>Responsable Brigada</span></div>
-        </div>
-      </div>
-
-      <button class="btn btn-primary" onclick="window.print()">📥 DESCARGAR / IMPRIMIR CERTIFICADO (PDF)</button>
-      <button class="btn btn-email" onclick="sendResultEmail()">✉️ ENVIAR RESULTADO POR CORREO</button>
+    <div id="cert-box-approved" class="cert-actions" style="display: none;">
+      <h4>Certificado Oficial de Aprobación</h4>
+      <p style="font-size: 0.82rem; color: #444; margin-bottom: 12px;">
+        Su evaluación ha sido aprobada. Puede descargar su certificado oficial en formato PDF o enviarlo por correo.
+      </p>
+      <button class="btn btn-gold" onclick="promptDownloadCert()">📥 DESCARGAR CERTIFICADO (PDF)</button>
+      <button class="btn btn-secondary" onclick="promptEmailCert()">✉️ ENVIAR POR CORREO ELECTRÓNICO</button>
     </div>
 
-    <p id="result-quote" style="font-style: italic; font-size: 0.85rem; text-align: center; margin: 15px 0; color: #555;">
+    <p style="font-style: italic; font-size: 0.85rem; text-align: center; margin: 15px 0; color: #666;">
       “Trabajar en equipo divide el trabajo y multiplica los resultados.”<br><strong>— Anónimo</strong>
     </p>
 
-    <button class="btn btn-secondary" onclick="location.reload()">VOLVER AL INICIO</button>
+    <button class="btn btn-outline" onclick="resetToHome()">VOLVER AL INICIO</button>
   </div>
 
-  <!-- VISTA 4: PANEL ADMIN CON ESTADÍSTICAS POR EMPRESA -->
+  <!-- ==================== VISTA 4: PANEL ADMIN ==================== -->
   <div id="view-admin" class="view">
     <div class="header">
       <h2 style="color: #333;">PANEL ADMINISTRADOR</h2>
+      <p style="font-size: 0.75rem; color: #666;">Dirección Nacional de Bomberos</p>
     </div>
 
-    <!-- ESTADÍSTICAS POR EMPRESA -->
-    <div style="width: 100%; text-align: left; margin-bottom: 20px; background:#fdfdfd; border:1px solid #ddd; padding:12px; border-radius:8px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-        <h4 style="font-size: 0.95rem; color: var(--primary);">Estadísticas por Empresa</h4>
-        <button class="btn btn-excel" onclick="exportToCSV()">📊 Exportar a Excel</button>
+    <!-- 1. Alta de Empresas -->
+    <div class="admin-section">
+      <h4>1. Registrar Nueva Empresa / Curso</h4>
+      <div class="form-group">
+        <label>Nombre de la Empresa *</label>
+        <input type="text" id="new-comp-name" class="form-control" placeholder="Ej: Acodike Supergás S.A.">
       </div>
+      <div style="display:flex; gap:6px;">
+        <div class="form-group" style="flex:1;">
+          <label>Nº de Curso</label>
+          <input type="text" id="new-comp-course" class="form-control" placeholder="Ej: 04/2026">
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label>Nº de Trámite</label>
+          <input type="text" id="new-comp-tramite" class="form-control" placeholder="Ej: TR-89412">
+        </div>
+      </div>
+      <div style="display:flex; gap:6px;">
+        <div class="form-group" style="flex:1;">
+          <label>Fecha del Curso</label>
+          <input type="date" id="new-comp-date" class="form-control">
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label>Participantes Asistentes</label>
+          <input type="number" id="new-comp-attendees" class="form-control" placeholder="Ej: 15">
+        </div>
+      </div>
+      <button class="btn btn-primary btn-sm" style="width:100%; margin-top:4px;" onclick="addCompanyWithMeta()">REGISTRAR EMPRESA</button>
 
-      <div class="form-group" style="margin-bottom: 10px;">
-        <label for="stats-company-filter">Seleccionar Empresa para Analizar:</label>
-        <select id="stats-company-filter" class="form-control" onchange="renderStats()">
-          <option value="ALL">Todas las empresas (General)</option>
+      <p style="font-size: 0.72rem; color: #666; margin: 10px 0 6px 0;">
+        Lista de Empresas registradas (puedes reactivarlas o cerrarlas haciendo clic en el estado):
+      </p>
+      <div id="company-list" style="font-size: 0.85rem; max-height: 140px; overflow-y: auto;"></div>
+    </div>
+
+    <!-- 2. Finalizar Proceso y Certificado Institucional -->
+    <div class="admin-section" style="background: #fafafa; padding: 14px; border-radius: 8px; border: 1.5px solid #dcdcdc;">
+      <h4 style="color: #8b0000; margin-bottom: 6px;">2. Finalizar Proceso y Certificado Institucional</h4>
+      <p style="font-size: 0.78rem; color: #555; margin-bottom: 10px;">
+        Selecciona cualquier empresa para cerrar su proceso, ver su promedio general y emitir su Certificado Institucional:
+      </p>
+      
+      <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+        <select id="close-company-select" class="form-control" style="font-size: 0.9rem;">
+          <option value="">Seleccione empresa a gestionar...</option>
         </select>
-      </div>
-
-      <div class="stats-container">
-        <div class="stat-card">
-          <div class="stat-number" id="stat-total" style="color: #333;">0</div>
-          <div class="stat-label">Evaluados</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number" id="stat-pass" style="color: #2e7d32;">0</div>
-          <div class="stat-label">Aprobados</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number" id="stat-fail" style="color: #c62828;">0</div>
-          <div class="stat-label">Reprobados</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number" id="stat-rate" style="color: #0288d1;">0%</div>
-          <div class="stat-label">% de Aprobación</div>
-        </div>
+        <button class="btn btn-primary btn-sm" style="background: #8b0000; min-width: 145px; font-weight:800;" onclick="finalizeCompanyProcess()">
+          CERRAR / EMITIR
+        </button>
       </div>
     </div>
 
-    <!-- Gestión de Empresas -->
-    <div style="width: 100%; text-align: left; margin-bottom: 20px;">
-      <h4 style="font-size: 0.95rem; margin-bottom: 8px;">Gestionar Empresas (Visible / No visible)</h4>
+    <!-- 3. Evaluaciones Recibidas -->
+    <div class="admin-section" style="margin-top: 15px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <h4>3. Evaluaciones Recibidas</h4>
+        <button class="btn btn-outline btn-sm" onclick="exportToCSV()" style="border-color:#2e7d32; color:#2e7d32;">Descargar Excel (CSV)</button>
+      </div>
+
       <div style="display: flex; gap: 6px; margin-bottom: 10px;">
-        <input type="text" id="new-company-name" class="form-control" placeholder="Nueva empresa">
-        <button class="btn btn-primary" style="width: 100px; margin-bottom: 0;" onclick="addCompany()">AGREGAR</button>
+        <select id="filter-company" class="form-control" style="font-size: 0.8rem; padding: 6px;" onchange="renderAdminResults()">
+          <option value="">Todas las empresas</option>
+        </select>
+        <input type="text" id="search-student" class="form-control" placeholder="Buscar CI / Nombre" style="font-size: 0.8rem; padding: 6px;" oninput="renderAdminResults()">
       </div>
-      <div id="company-list" style="max-height: 140px; overflow-y: auto; border: 1px solid #eee; padding: 6px; border-radius: 6px;"></div>
-    </div>
 
-    <!-- Tabla Detallada -->
-    <div style="width: 100%; text-align: left;">
-      <h4 style="font-size: 0.95rem;">Listado Detallado de Exámenes</h4>
       <div style="overflow-x: auto;">
         <table class="admin-table" id="results-table">
           <thead>
@@ -277,7 +670,8 @@
               <th>CI</th>
               <th>Empresa</th>
               <th>Nota</th>
-              <th>Dictamen</th>
+              <th>Fecha</th>
+              <th style="text-align: center;">Acción</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -285,12 +679,183 @@
       </div>
     </div>
 
-    <button class="btn btn-outline" style="margin-top: 25px;" onclick="switchView('view-home')">CERRAR SESIÓN</button>
+    <!-- 4. Verificación y Auditoría de Certificados (TRASLADADA AQUÍ) -->
+    <div class="admin-section">
+      <h4 style="color: #b8860b;">4. Auditoría y Verificación de Certificados</h4>
+      <p style="font-size: 0.75rem; color: #666; margin-bottom: 8px;">
+        Consulte y valide la autenticidad de cualquier certificado emitido ingresando su código único:
+      </p>
+      <button class="btn btn-gold btn-sm" style="width: 100%; font-weight: bold;" onclick="openVerifyModalManual()">
+        🔍 CONSULTAR CERTIFICADO POR CÓDIGO
+      </button>
+    </div>
+
+    <!-- 5. Ajustes de Publicación Web -->
+    <div class="admin-section" style="border-bottom:none;">
+      <h4>5. Enlace Web del Sistema (Para lectura de QR en celulares)</h4>
+      <div class="form-group">
+        <label>Dirección Web Pública (opcional si la subes a un servidor de Bomberos o hosting):</label>
+        <input type="text" id="admin-public-url" class="form-control" placeholder="Ej: https://bomberos-brigadas.web.app" onchange="savePublicUrl(this.value)">
+        <small style="color:#777; font-size:0.75rem;">Cuando la web esté en internet, los códigos QR llevarán directamente al teléfono que los escanee a la pantalla de verificación oficial.</small>
+      </div>
+    </div>
+
+    <button class="btn btn-outline" style="margin-top: 15px;" onclick="switchView('view-home')">CERRAR SESIÓN</button>
+  </div>
+
+  <!-- ==================== VISTA 5: VERIFICACIÓN OFICIAL (PANTALLA DE DESTINO DEL QR) ==================== -->
+  <div id="view-verify" class="view">
+    <div class="header">
+      <div class="logo-container">
+        <img id="verify-logo" class="main-logo-img" style="width:90px; height:90px;" alt="Escudo">
+      </div>
+      <h1 style="font-size: 0.95rem;">Dirección Nacional de Bomberos</h1>
+      <h2 style="font-size: 0.8rem;">SISTEMA CENTRAL DE VERIFICACIÓN DE BRIGADAS</h2>
+    </div>
+
+    <div class="verify-card">
+      <div class="verify-badge">✔ CERTIFICADO OFICIAL VÁLIDO Y REGISTRADO</div>
+      
+      <div class="verify-item">
+        <span>Código Único Institucional</span>
+        <strong id="v-code" style="color:#8b0000; font-family:monospace; font-size:1.05rem;">-</strong>
+      </div>
+      <div class="verify-item">
+        <span>Tipo de Certificación</span>
+        <strong id="v-type">Individual de Brigadista</strong>
+      </div>
+      <div class="verify-item">
+        <span>Titular Acreditado</span>
+        <strong id="v-name" style="font-size:1.05rem;">-</strong>
+      </div>
+      <div class="verify-item" id="v-ci-row">
+        <span>Cédula de Identidad</span>
+        <strong id="v-ci">-</strong>
+      </div>
+      <div class="verify-item">
+        <span>Empresa</span>
+        <strong id="v-company">-</strong>
+      </div>
+      <div class="verify-item">
+        <span>Capacitación</span>
+        <strong>EVALUACIÓN FINAL DE BRIGADA DE EMERGENCIAS</strong>
+      </div>
+      <div class="verify-item">
+        <span>Calificación Oficial</span>
+        <strong id="v-score" style="color:#2e7d32; font-size:1.05rem;">-</strong>
+      </div>
+      <div class="verify-item" style="border-bottom:none;">
+        <span>Fecha de Emisión</span>
+        <strong id="v-date">-</strong>
+      </div>
+    </div>
+
+    <p style="font-size: 0.75rem; color:#666; margin-top: 15px; text-align: center;">
+      Documento digital autenticado por el Departamento de Protección Contra Incendios.
+    </p>
+
+    <button class="btn btn-outline" style="margin-top: 15px;" onclick="goToMainApp()">IR AL INICIO</button>
   </div>
 
 </div>
 
-<!-- Modales -->
+<!-- ==================== MODALES ==================== -->
+
+<!-- MODAL RESULTADO DE CIERRE INSTITUCIONAL -->
+<div id="modal-company-result" class="modal-overlay">
+  <div class="modal-card" style="border-top-color: #8b0000;">
+    <h4 style="color:#8b0000; font-size:1.15rem;">Certificado Institucional</h4>
+    <div style="background:#f9f9f9; padding:12px; border-radius:8px; border:1px solid #ddd; margin-bottom:15px; text-align:left;">
+      <div style="font-size:1.05rem; font-weight:800; color:#111; margin-bottom:6px;" id="modal-comp-res-title">EMPRESA</div>
+      <div style="font-size:0.85rem; color:#444; line-height:1.5;">
+        • Curso Nº: <strong id="modal-comp-res-course">-</strong> | Trámite Nº: <strong id="modal-comp-res-tramite">-</strong><br>
+        • Fecha: <strong id="modal-comp-res-date">-</strong><br>
+        • Brigadistas Evaluados: <strong id="modal-comp-res-students">-</strong> (Aprobados: <span id="modal-comp-res-approved" style="color:#2e7d32; font-weight:bold;">-</span>)<br>
+        • <span style="font-size:1.1rem; color:#8b0000; font-weight:bold;">PROMEDIO GENERAL: <span id="modal-comp-res-avg">0.00</span> / 12</span><br>
+        • Código Oficial: <strong id="modal-comp-res-code" style="font-family:monospace; color:#555;">-</strong>
+      </div>
+    </div>
+    
+    <button class="btn btn-gold" onclick="downloadCompanyPDF()">📥 DESCARGAR CERTIFICADO EN PDF</button>
+    <button class="btn btn-secondary" onclick="openCompanyEmailModal()">✉️ ENVIAR A LA EMPRESA POR CORREO</button>
+    <button class="btn btn-outline" onclick="closeModal('modal-company-result')">⬅ VOLVER AL PANEL</button>
+  </div>
+</div>
+
+<div id="modal-manual-verify" class="modal-overlay">
+  <div class="modal-card">
+    <h4 style="color:#b8860b;">Verificar Autenticidad</h4>
+    <p>Ingrese el código único alfanumérico que figura en la esquina del certificado:</p>
+    <div class="form-group">
+      <input type="text" id="manual-verify-input" class="form-control" placeholder="Ej: DNB-2026-X8F4-99K2" style="text-align:center; text-transform:uppercase; font-family:monospace; font-size:1.05rem;">
+    </div>
+    <button class="btn btn-gold" onclick="searchCertificateByCode()">VERIFICAR AHORA</button>
+    <button class="btn btn-outline" onclick="closeModal('modal-manual-verify')">CANCELAR</button>
+  </div>
+</div>
+
+<div id="modal-download-cert" class="modal-overlay">
+  <div class="modal-card">
+    <h4 style="color: #b8860b;">Descargar Certificado PDF</h4>
+    <p>Se generará el certificado oficial a nombre de:<br>
+      <strong id="dl-preview-name" style="color:#111;"></strong><br>
+      C.I.: <span id="dl-preview-ci"></span><br>
+      Empresa: <span id="dl-preview-company"></span>
+    </p>
+    <button class="btn btn-gold" onclick="generateAndSavePDF()">📥 CONFIRMAR Y DESCARGAR</button>
+    <button class="btn btn-outline" onclick="closeModal('modal-download-cert')">⬅ RETROCEDER</button>
+  </div>
+</div>
+
+<div id="modal-email-cert" class="modal-overlay">
+  <div class="modal-card">
+    <h4 style="color: #37474f;">Enviar por Correo</h4>
+    <p style="font-size:0.85rem;">Ingrese el correo de destino. Al presionar continuar se descargará el certificado PDF y se abrirá su gestor de correo listo para adjuntarlo.</p>
+    <div class="form-group">
+      <label>CORREO ELECTRÓNICO:</label>
+      <input type="email" id="cert-email-input" class="form-control" placeholder="ejemplo@empresa.com">
+    </div>
+    <button class="btn btn-primary" onclick="confirmSendEmail()">CONTINUAR Y ENVIAR</button>
+    <button class="btn btn-outline" onclick="closeModal('modal-email-cert')">⬅ RETROCEDER</button>
+  </div>
+</div>
+
+<div id="modal-company-email" class="modal-overlay">
+  <div class="modal-card">
+    <h4 style="color: #8b0000;">Enviar Certificado a la Empresa</h4>
+    <p style="font-size:0.85rem;">Ingrese el correo institucional de la empresa para remitirle el Certificado Institucional con el promedio de notas de su brigada.</p>
+    <div class="form-group">
+      <label>CORREO DE LA EMPRESA:</label>
+      <input type="email" id="company-email-input" class="form-control" placeholder="seguridad@empresa.com">
+    </div>
+    <button class="btn btn-primary" style="background:#8b0000;" onclick="confirmCompanyEmailSend()">DESCARGAR Y ABRIR CORREO</button>
+    <button class="btn btn-outline" onclick="closeModal('modal-company-email')">⬅ RETROCEDER</button>
+  </div>
+</div>
+
+<div id="modal-admin-login" class="modal-overlay">
+  <div class="modal-card">
+    <h4 style="color: #333;">Acceso Administrador</h4>
+    <form id="admin-login-form" onsubmit="event.preventDefault(); verifyAdminLogin();">
+      <div class="form-group">
+        <label>USUARIO:</label>
+        <input type="text" id="admin-user" name="username" class="form-control" autocomplete="username" placeholder="Ingrese usuario">
+      </div>
+      <div class="form-group">
+        <label>CONTRASEÑA:</label>
+        <input type="password" id="admin-pass" name="password" class="form-control" autocomplete="current-password" placeholder="Ingrese contraseña">
+      </div>
+      <div style="display:flex; align-items:center; gap:8px; margin: 10px 0 15px 0; text-align:left;">
+        <input type="checkbox" id="admin-remember" style="transform:scale(1.2);">
+        <label for="admin-remember" style="font-size:0.82rem; color:#444; cursor:pointer;">Recordar acceso en esta Mac</label>
+      </div>
+      <p id="admin-login-error" style="color: red; font-size: 0.8rem; display: none; margin-bottom: 10px;">Usuario o contraseña incorrectos.</p>
+      <button type="submit" class="btn btn-primary">INGRESAR</button>
+      <button type="button" class="btn btn-outline" onclick="closeModal('modal-admin-login')">CANCELAR</button>
+    </form>
+  </div>
+</div>
+
 <div id="modal-alert-start" class="modal-overlay">
   <div class="modal-card">
     <h4>¡ATENCIÓN!</h4>
@@ -303,37 +868,262 @@
 <div id="modal-alert-cheat" class="modal-overlay">
   <div class="modal-card" style="border-top-color: #000; background: #ffebee;">
     <h4 style="color: #b71c1c;">CUESTIONARIO ANULADO</h4>
-    <p style="color: #b71c1c; font-weight: bold;">SI MINIMIZAS ESTA VENTANA O ABRES OTRA APP, EL CUESTIONARIO FINALIZARA CON UNA VALORACION DE CERO.</p>
-    <p>Se ha detectado salida del navegador. Calificación asignada: 0.</p>
+    <p style="color: #b71c1c; font-weight: bold;">
+      SI MINIMIZAS ESTA VENTANA O ABRES OTRA APP, EL CUESTIONARIO FINALIZARA CON UNA VALORACION DE CERO.
+    </p>
+    <p>Se ha detectado salida del navegador. Tu examen ha finalizado con calificación 0.</p>
     <button class="btn btn-primary" onclick="finalizeCheatExam()">ENTENDIDO</button>
   </div>
 </div>
 
-<script>
-code
-/* =========================================================================
-     CONFIGURACIÓN DE FIREBASE (CON TUS DATOS)
-     ========================================================================= */
-  const firebaseConfig = {
-    apiKey: "AIzaSyBjP0jRCqgcLsTSrruUyR2Sg8YDyCsUEMU",
-    authDomain: "evaluacion-bomberos.firebaseapp.com",
-    databaseURL: "https://evaluacion-bomberos-default-rtdb.firebaseio.com",
-    projectId: "evaluacion-bomberos",
-    storageBucket: "evaluacion-bomberos.firebasestorage.app",
-    messagingSenderId: "312467343862",
-    appId: "1:312467343862:web:55739d178ab6cce86d9fd7"
-  };
+<!-- ==================== PLANTILLA 1: CERTIFICADO INDIVIDUAL ==================== -->
+<div id="certificate-render-wrapper">
+  <div id="certificate-template" class="certificate-page">
+    <div class="cert-outer-border">
+      
+      <div class="cert-header-wrapper">
+        <img class="cert-logo-img cert-dyn-logo" alt="Escudo">
+        <div class="cert-header">
+          <h1>DIRECCIÓN NACIONAL DE BOMBEROS</h1>
+          <h2>DEPARTAMENTO DE PROTECCIÓN CONTRA INCENDIOS</h2>
+          <h3>CAPACITACIÓN Y FORMACIÓN DE BRIGADAS</h3>
+        </div>
+        <img class="cert-logo-img cert-dyn-logo" alt="Escudo">
+      </div>
 
-  // Inicializar Firebase
-  let db = null;
-  try {
-    firebase.initializeApp(firebaseConfig);
-    db = firebase.database();
-  } catch(e) {
-    console.error("Firebase no configurado aún.", e);
+      <div>
+        <div class="cert-title-diploma">CERTIFICADO DE APROBACIÓN</div>
+        <p style="font-size: 13px; letter-spacing: 2px; color: #555; margin-top: 4px;">SE DEJA CONSTANCIA OFICIAL QUE:</p>
+      </div>
+
+      <div class="cert-body">
+        <div id="cert-pdf-name" class="cert-entity-name">ALEXANDER RIVERO PRUEBA</div>
+        
+        <p style="margin: 10px 0;">
+          Cédula de Identidad <strong>Nº <span id="cert-pdf-ci">4.435.751-6</span></strong>, perteneciente a la empresa <strong><span id="cert-pdf-company">DNB PRUEBA</span></strong>, ha rendido y superado con éxito las exigencias teóricas y prácticas correspondientes a la:
+        </p>
+        
+        <p style="font-size: 18px; font-weight: 900; color: #8b0000; margin: 8px 0; letter-spacing: 0.5px;">
+          EVALUACIÓN FINAL DE BRIGADA DE EMERGENCIAS
+        </p>
+
+        <div class="cert-details-grid">
+          <div>Resultado: <strong><span id="cert-pdf-score">10</span> / 12</strong></div>
+          <div>Dictamen: <strong><span id="cert-pdf-status">APROBADO CON UNA MUY BUENA CALIFICACION</span></strong></div>
+          <div>Fecha: <strong><span id="cert-pdf-date">03/11/2026</span></strong></div>
+        </div>
+      </div>
+
+      <div class="cert-security-footer">
+        <div class="cert-qr-box">
+          <div id="cert-pdf-qrcode" style="background:#fff; padding:3px; border:1px solid #ddd; width:80px; height:80px;"></div>
+          <div class="cert-verification-text">
+            <strong>CERTIFICADO DIGITAL AUTÉNTICO</strong><br>
+            Escanee este código QR con la cámara de su celular para constatar de forma directa la autenticidad y datos oficiales de este documento emitido por la Dirección Nacional de Bomberos.
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size: 10px; color: #666; margin-bottom: 4px; text-transform: uppercase;">Código de Registro Oficial:</div>
+          <div id="cert-pdf-unique-id" class="cert-code-badge">DNB-2026-X8F4-99K2</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PLANTILLA 2: CERTIFICADO EMPRESA ==================== -->
+<div id="company-cert-render-wrapper">
+  <div id="company-cert-template" class="certificate-page">
+    <div class="cert-outer-border">
+      
+      <div class="cert-header-wrapper">
+        <img class="cert-logo-img cert-dyn-logo" alt="Escudo">
+        <div class="cert-header">
+          <h1>DIRECCIÓN NACIONAL DE BOMBEROS</h1>
+          <h2>DEPARTAMENTO DE PROTECCIÓN CONTRA INCENDIOS</h2>
+          <h3>CAPACITACIÓN Y FORMACIÓN DE BRIGADAS</h3>
+        </div>
+        <img class="cert-logo-img cert-dyn-logo" alt="Escudo">
+      </div>
+
+      <div>
+        <div class="cert-title-diploma">CERTIFICADO INSTITUCIONAL DE BRIGADA</div>
+        <p style="font-size: 13px; letter-spacing: 2px; color: #555; margin-top: 4px;">SE ACREDITA OFICIALMENTE A LA EMPRESA:</p>
+      </div>
+
+      <div class="cert-body">
+        <div id="comp-pdf-name" class="cert-entity-name">ACODIKE SUPERGAS S.A.</div>
+        
+        <p style="margin: 10px 0;">
+          Por haber completado satisfactoriamente el proceso de formación y acreditación técnica de su personal integrante de la <strong>Brigada de Emergencia Industrial y Comercial</strong>, de acuerdo a las directivas del Departamento de Protección Contra Incendios.
+        </p>
+
+        <div class="cert-details-grid" style="gap:35px; font-size:14px; background:#fafafa; padding:10px; border-radius:6px; border:1px solid #eee; margin:12px auto; max-width:700px;">
+          <div>Curso Nº: <strong><span id="comp-pdf-course">-</span></strong></div>
+          <div>Trámite Nº: <strong><span id="comp-pdf-tramite">-</span></strong></div>
+          <div>Fecha: <strong><span id="comp-pdf-date">-</span></strong></div>
+        </div>
+
+        <p style="margin-top:10px; font-size:17px;">
+          Calificación Promedio General de la Brigada: <strong style="color:#8b0000; font-size:22px;"><span id="comp-pdf-avg">11.5</span> / 12</strong>
+        </p>
+      </div>
+
+      <div class="cert-security-footer">
+        <div class="cert-qr-box">
+          <div id="comp-pdf-qrcode" style="background:#fff; padding:3px; border:1px solid #ddd; width:80px; height:80px;"></div>
+          <div class="cert-verification-text">
+            <strong>CERTIFICACIÓN INSTITUCIONAL VERIFICADA</strong><br>
+            Constancia oficial emitida a la empresa por la Dirección Nacional de Bomberos. Verificable mediante código QR y código de registro institucional.
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size: 10px; color: #666; margin-bottom: 4px; text-transform: uppercase;">Registro Institucional:</div>
+          <div id="comp-pdf-unique-id" class="cert-code-badge">DNB-EMP-2026-XXXX</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  /* =====================================================================
+     CARGA DEL ESCUDO ORIGINAL Y DEFINICIÓN DE SISTEMA
+     ===================================================================== */
+  function initOfficialLogo() {
+    const saved = localStorage.getItem('dnb_custom_logo');
+    if (saved) {
+      applyLogoToAll(saved);
+      return;
+    }
+
+    const img = new Image();
+    img.onload = function() {
+      try {
+        const cvs = document.createElement("canvas");
+        cvs.width = img.naturalWidth || 300;
+        cvs.height = img.naturalHeight || 300;
+        const ctx = cvs.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+        const dataUrl = cvs.toDataURL("image/png");
+        localStorage.setItem('dnb_custom_logo', dataUrl);
+        applyLogoToAll(dataUrl);
+      } catch(e) {
+        applyLogoToAll("escudo.png");
+      }
+    };
+    img.onerror = function() {
+      applyLogoToAll("escudo.png");
+    };
+    img.src = "escudo.png";
   }
 
-  /* BANCO DE PREGUNTAS */
+  function applyLogoToAll(src) {
+    const hLogo = document.getElementById('home-logo');
+    if (hLogo) hLogo.src = src;
+    const vLogo = document.getElementById('verify-logo');
+    if (vLogo) vLogo.src = src;
+    document.querySelectorAll('.cert-dyn-logo').forEach(el => el.src = src);
+  }
+
+  function savePublicUrl(url) {
+    localStorage.setItem('dnb_public_url', url.trim());
+  }
+
+  // Generador dinámico de URL para el QR
+  function buildVerificationUrl(payload) {
+    const token = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+    let base = (localStorage.getItem('dnb_public_url') || '').trim();
+
+    if (!base) {
+      if (window.location.protocol.startsWith('http')) {
+        base = window.location.href.split('?')[0].split('#')[0];
+      } else {
+        base = window.location.href.split('?')[0].split('#')[0];
+      }
+    }
+    base = base.replace(/\/+$/, '');
+    return `${base}#verify=${token}`;
+  }
+
+  let activeQuestions = [];
+  let examInProgress = false;
+
+  let lastExamData = { name: "", ci: "", company: "", score: 0, status: "", date: "", certId: "" };
+  let lastCompanyCertData = null;
+
+  function getStoredCompanies() {
+    let data = JSON.parse(
+      localStorage.getItem('dnb_companies_v4') || 
+      localStorage.getItem('dnb_companies_v3') || 
+      localStorage.getItem('dnb_companies_v2') || 
+      'null'
+    );
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      data = [
+        { name: "DNB PRUEBA", course: "01/2026", tramite: "TR-5412", date: "2026-11-03", attendees: 12, active: true },
+        { name: "Acodike Supergás S.A.", course: "02/2026", tramite: "TR-6840", date: "2026-11-03", attendees: 15, active: true }
+      ];
+      localStorage.setItem('dnb_companies_v4', JSON.stringify(data));
+    }
+    return data;
+  }
+
+  function saveStoredCompanies(list) {
+    localStorage.setItem('dnb_companies_v4', JSON.stringify(list));
+  }
+
+  function generateCertCode(prefix = "DNB") {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let p1 = "", p2 = "";
+    for (let i = 0; i < 4; i++) p1 += chars.charAt(Math.floor(Math.random() * chars.length));
+    for (let i = 0; i < 4; i++) p2 += chars.charAt(Math.floor(Math.random() * chars.length));
+    const year = new Date().getFullYear();
+    return `${prefix}-${year}-${p1}-${p2}`;
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    initOfficialLogo();
+    checkVerificationUrl();
+
+    const savedUrl = localStorage.getItem('dnb_public_url');
+    if (savedUrl) {
+      const input = document.getElementById('admin-public-url');
+      if (input) input.value = savedUrl;
+    }
+
+    try {
+      new QRCode(document.getElementById("qrcode"), {
+        text: (savedUrl || window.location.href.split('#')[0].split('?')[0]),
+        width: 140,
+        height: 140
+      });
+    } catch(e) { console.warn(e); }
+
+    loadCompaniesInSelect();
+  });
+
+  // Detección automática al abrir enlace con #verify=
+  function checkVerificationUrl() {
+    const hash = window.location.hash;
+    if (hash.startsWith('#verify=')) {
+      try {
+        const rawToken = hash.replace('#verify=', '');
+        const decoded = JSON.parse(decodeURIComponent(escape(atob(rawToken))));
+        renderVerificationData(decoded);
+      } catch (e) {
+        console.error("Token de verificación inválido", e);
+      }
+    }
+  }
+
+  /* =====================================================================
+     BANCO DE PREGUNTAS (12 BLOQUES)
+     ===================================================================== */
   const IMG_EXTINTOR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 240'%3E%3Crect x='44' y='10' width='12' height='30' fill='%23666'/%3E%3Cpath d='M30 40 L70 40 L65 55 L35 55 Z' fill='%23333'/%3E%3Cpath d='M25 75 Q25 55 50 55 Q75 55 75 75 L75 210 Q75 225 50 225 Q25 225 25 210 Z' fill='%23d32f2f'/%3E%3Crect x='32' y='100' width='36' height='70' fill='%23fff' stroke='%23333'/%3E%3Ctext x='50' y='130' font-size='9' text-anchor='middle' font-weight='bold' fill='%23000'%3EEXTINTOR%3C/text%3E%3Ctext x='50' y='150' font-size='11' text-anchor='middle' fill='%23d32f2f'%3EABC%3C/text%3E%3Ccircle cx='50' cy='32' r='8' fill='%23bbb' stroke='%23333'/%3E%3Cpath d='M50 40 L85 25' stroke='%23333' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E";
 
   const questionBank = {
@@ -400,80 +1190,12 @@ code
     ]
   };
 
-  /* ESTADO DE LA APLICACIÓN */
-  let activeQuestions = [];
-  let examInProgress = false;
-  let currentExamData = null;
-  let globalEvaluations = [];
-  let globalCompanies = [];
-
-  window.addEventListener('DOMContentLoaded', () => {
-    new QRCode(document.getElementById("qrcode"), { text: window.location.href, width: 140, height: 140 });
-    initRealtimeListeners();
-  });
-
-  /* SINCRONIZACIÓN EN TIEMPO REAL CON FIREBASE */
-  function initRealtimeListeners() {
-    if (!db) return;
-
-    // Escuchar Empresas
-    db.ref('companies').on('value', snapshot => {
-      const val = snapshot.val();
-      globalCompanies = val || [
-        { name: "Empresa Modelo S.A.", visible: true },
-        { name: "Logística del Sur", visible: true }
-      ];
-      loadCompaniesInSelect();
-      updateCompanyFilterDropdown();
-    });
-
-    // Escuchar Evaluaciones
-    db.ref('evaluations').on('value', snapshot => {
-      const val = snapshot.val();
-      globalEvaluations = val ? Object.values(val) : [];
-      renderStats();
-    });
-  }
-
-  /* SISTEMA ANTI-COPIA */
-  document.addEventListener("visibilitychange", () => {
-    if (examInProgress && document.hidden) triggerCheatPenalty();
-  });
-
-  function triggerCheatPenalty() {
-    examInProgress = false;
-    document.getElementById('modal-alert-cheat').style.display = 'flex';
-  }
-
-  function finalizeCheatExam() {
-    closeModal('modal-alert-cheat');
-    const name = document.getElementById('student-name').value.trim() || "No identificado (Anulado)";
-    const ci = document.getElementById('student-ci').value.trim() || "S/D";
-    const company = document.getElementById('student-company').value || "S/D";
-
-    saveResult(name, ci, company, 0, "REPROBADO (SALIDA DE APLICACIÓN)");
-    localStorage.setItem('dnb_device_completed', 'true');
-    renderResultView(name, ci, company, 0, "REPROBADO (CERO POR MINIMIZAR LA VENTANA O CAMBIAR DE APLICACIÓN)");
-  }
-
-  /* NAVEGACIÓN */
-  function switchView(viewId) {
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.getElementById(viewId).classList.add('active');
-    window.scrollTo(0,0);
-  }
-
-  function closeModal(modalId) {
-    document.getElementById(modalId).style.display = 'none';
-  }
-
-  /* FLUJO DEL ALUMNO */
+  /* =====================================================================
+     INICIO Y EVALUACIÓN
+     ===================================================================== */
   function promptStartEvaluation() {
-    if (localStorage.getItem('dnb_device_completed') === 'true') {
-      alert("ESTE DISPOSITIVO YA HA COMPLETADO LA EVALUACIÓN Y NO TIENE PERMITIDO OTRO INTENTO.");
-      return;
-    }
-    document.getElementById('modal-alert-start').style.display = 'flex';
+    const modal = document.getElementById('modal-alert-start');
+    if (modal) modal.style.display = 'flex';
   }
 
   function confirmStartExam() {
@@ -514,6 +1236,25 @@ code
       `;
       container.appendChild(card);
     }
+    validateForm();
+  }
+
+  function loadCompaniesInSelect() {
+    const list = getStoredCompanies();
+    const select = document.getElementById('student-company');
+    if (!select) return;
+    
+    select.innerHTML = '<option value="">Seleccione su Empresa...</option>';
+    
+    let activeList = list.filter(c => c.active);
+    if (activeList.length === 0) activeList = list;
+
+    activeList.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.name;
+      opt.textContent = c.name;
+      select.appendChild(opt);
+    });
   }
 
   function sanitizeCI(input) {
@@ -522,9 +1263,15 @@ code
   }
 
   function validateForm() {
-    const comp = document.getElementById('student-company').value;
-    const name = document.getElementById('student-name').value.trim();
-    const ci = document.getElementById('student-ci').value.trim();
+    const compEl = document.getElementById('student-company');
+    const nameEl = document.getElementById('student-name');
+    const ciEl = document.getElementById('student-ci');
+    const btn = document.getElementById('btn-finish');
+    if (!compEl || !nameEl || !ciEl || !btn) return;
+
+    const comp = compEl.value;
+    const name = nameEl.value.trim();
+    const ci = ciEl.value.trim();
 
     let allAnswered = true;
     for (let i = 1; i <= 12; i++) {
@@ -535,7 +1282,6 @@ code
       }
     }
 
-    const btn = document.getElementById('btn-finish');
     if (comp && name && ci && allAnswered) {
       btn.disabled = false;
       btn.className = "btn btn-success";
@@ -570,185 +1316,571 @@ code
     const name = document.getElementById('student-name').value.trim();
     const ci = document.getElementById('student-ci').value.trim();
     const company = document.getElementById('student-company').value;
+    const today = new Date().toLocaleDateString();
+    const certId = generateCertCode("DNB");
+
+    lastExamData = { name, ci, company, score, status, date: today, certId };
 
     saveResult(name, ci, company, score, status);
-    localStorage.setItem('dnb_device_completed', 'true');
-    renderResultView(name, ci, company, score, status);
+    renderResultView(score, status);
   }
 
-  function renderResultView(name, ci, company, score, status) {
+  function renderResultView(score, status) {
     const isPass = score >= 7;
-    currentExamData = { name, ci, company, score, status, date: new Date().toLocaleDateString() };
-
     const container = document.getElementById('result-content');
     container.className = `result-box ${isPass ? 'approved' : 'failed'}`;
+
+    let starsHtml = '<div class="stars-wrapper">';
+    for (let i = 1; i <= 12; i++) {
+      const isGold = i <= score;
+      starsHtml += `
+        <svg class="star-svg ${isGold ? 'star-gold' : 'star-grey'}" viewBox="0 0 24 24">
+          <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+        </svg>
+      `;
+    }
+    starsHtml += '</div>';
+
     container.innerHTML = `
-      <h2 style="font-size: 1.6rem; margin-bottom: 6px;">${score} / 12</h2>
-      <h3 style="font-size: 1.05rem; text-transform: uppercase;">${status}</h3>
-      <p style="font-size: 0.8rem; margin-top: 6px;">Aciertos requeridos para aprobar: mínimo 7.</p>
+      <h2 style="font-size: 1.8rem; margin-bottom: 2px;">${score} / 12</h2>
+      ${starsHtml}
+      <h3 style="font-size: 1.05rem; text-transform: uppercase; margin-top: 6px;">${status}</h3>
+      <p style="font-size: 0.8rem; margin-top: 6px; opacity: 0.9;">Mínimo requerido para aprobar: 7 aciertos.</p>
     `;
 
-    const certWrapper = document.getElementById('certificate-wrapper');
+    const certBox = document.getElementById('cert-box-approved');
     if (isPass) {
-      document.getElementById('cert-student-name').textContent = name.toUpperCase();
-      document.getElementById('cert-student-ci').textContent = ci;
-      document.getElementById('cert-student-company').textContent = company.toUpperCase();
-      document.getElementById('cert-status-badge').textContent = status;
-      document.getElementById('cert-date').textContent = currentExamData.date;
-      certWrapper.style.display = 'block';
+      certBox.style.display = 'block';
+
+      document.getElementById('cert-pdf-name').textContent = lastExamData.name.toUpperCase();
+      document.getElementById('cert-pdf-ci').textContent = lastExamData.ci;
+      document.getElementById('cert-pdf-company').textContent = lastExamData.company.toUpperCase();
+      document.getElementById('cert-pdf-score').textContent = lastExamData.score;
+      document.getElementById('cert-pdf-status').textContent = lastExamData.status.toUpperCase();
+      document.getElementById('cert-pdf-date').textContent = lastExamData.date;
+      document.getElementById('cert-pdf-unique-id').textContent = lastExamData.certId;
+
+      const certPayload = {
+        type: 'individual',
+        id: lastExamData.certId,
+        n: lastExamData.name.toUpperCase(),
+        ci: lastExamData.ci,
+        c: lastExamData.company.toUpperCase(),
+        s: lastExamData.score,
+        st: lastExamData.status.toUpperCase(),
+        d: lastExamData.date
+      };
+
+      registerIssuedCert(certPayload);
+
+      // Generar URL directa de verificación web
+      const verifyUrl = buildVerificationUrl(certPayload);
+
+      const qrContainer = document.getElementById('cert-pdf-qrcode');
+      qrContainer.innerHTML = '';
+      try {
+        new QRCode(qrContainer, { text: verifyUrl, width: 78, height: 78 });
+      } catch(e) { console.warn(e); }
+
     } else {
-      certWrapper.style.display = 'none';
+      certBox.style.display = 'none';
     }
 
     switchView('view-result');
   }
 
-  function sendResultEmail() {
-    if (!currentExamData) return;
-    const subject = encodeURIComponent(`Certificado de Evaluación - ${currentExamData.name} - ${currentExamData.company}`);
-    const body = encodeURIComponent(
-      `DIRECCIÓN NACIONAL DE BOMBEROS\nDEPARTAMENTO DE PROTECCIÓN CONTRA INCENDIOS\n\n` +
-      `EVALUACIÓN FINAL DE BRIGADA DE EMERGENCIAS\n\n` +
-      `Alumno: ${currentExamData.name}\nCédula: ${currentExamData.ci}\nEmpresa: ${currentExamData.company}\n` +
-      `Calificación: ${currentExamData.score}/12\nResultado: ${currentExamData.status}\nFecha: ${currentExamData.date}\n`
-    );
-    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  function promptDownloadCert() {
+    document.getElementById('dl-preview-name').innerText = lastExamData.name;
+    document.getElementById('dl-preview-ci').innerText = lastExamData.ci;
+    document.getElementById('dl-preview-company').innerText = lastExamData.company;
+    document.getElementById('modal-download-cert').style.display = 'flex';
   }
 
-  /* GUARDADO EN LA NUBE (FIREBASE) */
-  function saveResult(name, ci, company, score, status) {
-    const record = { name, ci, company, score, status, date: new Date().toLocaleString() };
-    if (db) {
-      db.ref('evaluations').push(record);
+  function promptEmailCert() {
+    document.getElementById('cert-email-input').value = '';
+    document.getElementById('modal-email-cert').style.display = 'flex';
+  }
+
+  function generateAndSavePDF(callback) {
+    const element = document.getElementById('certificate-template');
+    const opt = {
+      margin:       0,
+      filename:     `Certificado_Brigada_${lastExamData.name.replace(/\s+/g, '_')}_${lastExamData.ci}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true, letterRendering: true, scrollY: 0 },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' },
+      pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+    };
+
+    html2pdf().set(opt).from(element).save().then(() => {
+      closeModal('modal-download-cert');
+      if (callback) callback();
+    });
+  }
+
+  function confirmSendEmail() {
+    const email = document.getElementById('cert-email-input').value.trim();
+    if (!email || !email.includes('@')) {
+      alert("Por favor ingrese un correo electrónico válido.");
+      return;
     }
-  }
 
-  /* ADMINISTRACIÓN Y ESTADÍSTICAS */
-  function openAdminLogin() {
-    const user = prompt("Ingrese Usuario Administrador:");
-    if (user !== "44357516") return alert("Usuario incorrecto.");
-    const pass = prompt("Ingrese Contraseña:");
-    if (pass !== "3640381") return alert("Contraseña incorrecta.");
-    
-    renderAdminPanel();
-    renderStats();
-    switchView('view-admin');
-  }
+    closeModal('modal-email-cert');
 
-  function loadCompaniesInSelect() {
-    const select = document.getElementById('student-company');
-    select.innerHTML = '<option value="">Seleccione su Empresa...</option>';
-    globalCompanies.filter(c => c.visible).forEach(c => {
-      const opt = document.createElement('option');
-      opt.value = c.name;
-      opt.textContent = c.name;
-      select.appendChild(opt);
+    generateAndSavePDF(() => {
+      const subject = encodeURIComponent(`Certificado de Aprobación Brigada - ${lastExamData.name}`);
+      const body = encodeURIComponent(
+        `Estimado/a,\n\nSe adjunta el Certificado Oficial de Aprobación de la Evaluación Final de Brigada de Emergencia emitido por la Dirección Nacional de Bomberos.\n\nAlumno: ${lastExamData.name}\nC.I.: ${lastExamData.ci}\nEmpresa: ${lastExamData.company}\nCalificación: ${lastExamData.score}/12 (${lastExamData.status})\nCódigo Oficial: ${lastExamData.certId}\n\n(Por favor adjunte el archivo PDF descargado a este correo antes de enviarlo).\n\nSaludos cordiales.`
+      );
+      window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
     });
   }
 
-  function updateCompanyFilterDropdown() {
-    const select = document.getElementById('stats-company-filter');
-    const currentVal = select.value;
-    select.innerHTML = '<option value="ALL">Todas las empresas (General)</option>';
-    globalCompanies.forEach(c => {
-      const opt = document.createElement('option');
-      opt.value = c.name;
-      opt.textContent = c.name;
-      select.appendChild(opt);
-    });
-    select.value = currentVal;
+  function saveResult(name, ci, company, score, status) {
+    const records = JSON.parse(localStorage.getItem('dnb_evaluations') || '[]');
+    const now = new Date();
+    const formattedDate = `${now.toLocaleDateString()} ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+    records.push({ name, ci, company, score, status, date: formattedDate });
+    localStorage.setItem('dnb_evaluations', JSON.stringify(records));
+  }
+
+  /* =====================================================================
+     ADMINISTRACIÓN
+     ===================================================================== */
+  function openAdminModal() {
+    if (localStorage.getItem('dnb_admin_remembered') === 'true') {
+      renderAdminPanel();
+      switchView('view-admin');
+      return;
+    }
+
+    document.getElementById('admin-user').value = '';
+    document.getElementById('admin-pass').value = '';
+    document.getElementById('admin-login-error').style.display = 'none';
+    document.getElementById('modal-admin-login').style.display = 'flex';
+  }
+
+  function verifyAdminLogin() {
+    const user = document.getElementById('admin-user').value.trim();
+    const pass = document.getElementById('admin-pass').value.trim();
+    const remember = document.getElementById('admin-remember').checked;
+
+    if (user === "44357516" && pass === "3640381") {
+      if (remember) {
+        localStorage.setItem('dnb_admin_remembered', 'true');
+      }
+      closeModal('modal-admin-login');
+      renderAdminPanel();
+      switchView('view-admin');
+    } else {
+      document.getElementById('admin-login-error').style.display = 'block';
+    }
   }
 
   function renderAdminPanel() {
+    const compList = getStoredCompanies();
     const cContainer = document.getElementById('company-list');
-    cContainer.innerHTML = globalCompanies.map((c, i) => `
-      <div class="company-row">
-        <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; cursor:pointer;">
-          <input type="checkbox" ${c.visible ? 'checked' : ''} onchange="toggleCompanyVisibility(${i})">
-          <span style="${c.visible ? 'font-weight:bold;' : 'color:#888; text-decoration:line-through;'}">${c.name}</span>
-        </label>
-        <button onclick="removeCompany(${i})" style="color:red; border:none; background:none; cursor:pointer; font-size:0.8rem;">Eliminar</button>
-      </div>
-    `).join('') || '<p style="color:#888; font-size:0.8rem;">No hay empresas registradas.</p>';
-  }
-
-  /* CÁLCULO DE ESTADÍSTICAS POR EMPRESA */
-  function renderStats() {
-    const filter = document.getElementById('stats-company-filter') ? document.getElementById('stats-company-filter').value : 'ALL';
     
-    const filteredEvaluations = filter === 'ALL' 
-      ? globalEvaluations 
-      : globalEvaluations.filter(e => e.company === filter);
-
-    const total = filteredEvaluations.length;
-    const passed = filteredEvaluations.filter(e => e.score >= 7).length;
-    const failed = total - passed;
-    const rate = total > 0 ? Math.round((passed / total) * 100) : 0;
-
-    document.getElementById('stat-total').textContent = total;
-    document.getElementById('stat-pass').textContent = passed;
-    document.getElementById('stat-fail').textContent = failed;
-    document.getElementById('stat-rate').textContent = rate + '%';
-
-    // Actualizar Tabla
-    const tbody = document.querySelector('#results-table tbody');
-    if (tbody) {
-      tbody.innerHTML = filteredEvaluations.map(r => `
-        <tr>
-          <td>${r.name}</td>
-          <td>${r.ci}</td>
-          <td>${r.company}</td>
-          <td><strong>${r.score}/12</strong></td>
-          <td style="color:${r.score>=7 ? '#2e7d32':'#c62828'}; font-weight:bold;">${r.status}</td>
-        </tr>
-      `).join('') || '<tr><td colspan="5" style="text-align:center;">No hay exámenes para mostrar.</td></tr>';
+    if (compList.length === 0) {
+      cContainer.innerHTML = '<p style="color:#888;">No hay empresas registradas.</p>';
+    } else {
+      cContainer.innerHTML = compList.map((c, i) => `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #eee;">
+          <div>
+            <strong>${c.name}</strong> 
+            <span style="font-size:0.75rem; color:#666;">(Curso: ${c.course || '-'}, Trámite: ${c.tramite || '-'})</span>
+            <span class="badge ${c.active ? 'badge-success' : 'badge-muted'}" style="margin-left: 6px; cursor: pointer;" onclick="toggleCompanyActive(${i})">
+              ${c.active ? '● Visible' : '○ Oculta'}
+            </span>
+          </div>
+          <button onclick="removeCompany(${i})" style="color:red; border:none; background:none; cursor:pointer; font-size:0.8rem;">Eliminar</button>
+        </div>
+      `).join('');
     }
+
+    const filterSelect = document.getElementById('filter-company');
+    const currentVal = filterSelect.value;
+    filterSelect.innerHTML = '<option value="">Todas las empresas</option>';
+    compList.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.name;
+      opt.textContent = c.name;
+      filterSelect.appendChild(opt);
+    });
+    filterSelect.value = currentVal;
+
+    const closeSelect = document.getElementById('close-company-select');
+    const prevSelectVal = closeSelect.value;
+    closeSelect.innerHTML = '<option value="">Seleccione empresa a gestionar...</option>';
+    compList.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.name;
+      opt.textContent = `${c.name} ${c.active ? '(Activa)' : '(Cerrada)'}`;
+      closeSelect.appendChild(opt);
+    });
+    if (prevSelectVal) closeSelect.value = prevSelectVal;
+
+    renderAdminResults();
   }
 
-  function toggleCompanyVisibility(index) {
-    globalCompanies[index].visible = !globalCompanies[index].visible;
-    if (db) db.ref('companies').set(globalCompanies);
+  function toggleCompanyActive(index) {
+    const list = getStoredCompanies();
+    list[index].active = !list[index].active;
+    saveStoredCompanies(list);
     renderAdminPanel();
+    loadCompaniesInSelect();
   }
 
-  function addCompany() {
-    const input = document.getElementById('new-company-name');
-    const val = input.value.trim();
-    if (!val) return;
-    globalCompanies.push({ name: val, visible: true });
-    if (db) db.ref('companies').set(globalCompanies);
-    input.value = "";
+  function addCompanyWithMeta() {
+    const name = document.getElementById('new-comp-name').value.trim();
+    if (!name) {
+      alert("Por favor ingrese el nombre de la empresa.");
+      return;
+    }
+
+    const course = document.getElementById('new-comp-course').value.trim() || "-";
+    const tramite = document.getElementById('new-comp-tramite').value.trim() || "-";
+    const date = document.getElementById('new-comp-date').value || new Date().toISOString().slice(0,10);
+    const attendees = parseInt(document.getElementById('new-comp-attendees').value) || 0;
+
+    const list = getStoredCompanies();
+    list.push({ name, course, tramite, date, attendees, active: true });
+    saveStoredCompanies(list);
+
+    document.getElementById('new-comp-name').value = '';
+    document.getElementById('new-comp-course').value = '';
+    document.getElementById('new-comp-tramite').value = '';
+    document.getElementById('new-comp-attendees').value = '';
+
     renderAdminPanel();
+    loadCompaniesInSelect();
+    alert(`Empresa "${name}" registrada correctamente.`);
   }
 
   function removeCompany(index) {
-    if (confirm("¿Seguro que deseas eliminar esta empresa?")) {
-      globalCompanies.splice(index, 1);
-      if (db) db.ref('companies').set(globalCompanies);
+    if (confirm("¿Seguro que desea eliminar esta empresa?")) {
+      const list = getStoredCompanies();
+      list.splice(index, 1);
+      saveStoredCompanies(list);
       renderAdminPanel();
+      loadCompaniesInSelect();
     }
   }
 
-  /* EXPORTACIÓN A EXCEL / CSV */
+  /* =====================================================================
+     FINALIZAR PROCESO DE EMPRESA Y MODAL DIRECTO
+     ===================================================================== */
+  function finalizeCompanyProcess() {
+    const companySelect = document.getElementById('close-company-select');
+    const companyName = companySelect ? companySelect.value : "";
+
+    if (!companyName) {
+      alert("Por favor seleccione una empresa de la lista desplegable antes de presionar CERRAR/EMITIR.");
+      return;
+    }
+
+    const records = JSON.parse(localStorage.getItem('dnb_evaluations') || '[]');
+    const companyRecords = records.filter(r => r.company === companyName);
+
+    const list = getStoredCompanies();
+    let compObj = list.find(c => c.name === companyName);
+    if (!compObj) {
+      compObj = { name: companyName, course: "-", tramite: "-", date: new Date().toLocaleDateString(), active: false };
+      list.push(compObj);
+    } else {
+      compObj.active = false;
+    }
+    saveStoredCompanies(list);
+
+    let totalScore = 0;
+    let approvedCount = 0;
+    companyRecords.forEach(r => {
+      totalScore += Number(r.score) || 0;
+      if (Number(r.score) >= 7) approvedCount++;
+    });
+
+    const totalStudents = companyRecords.length;
+    const averageScore = totalStudents > 0 ? (totalScore / totalStudents).toFixed(2) : "0.00";
+    const certId = generateCertCode("DNB-EMP");
+    const today = compObj.date || new Date().toLocaleDateString();
+
+    lastCompanyCertData = {
+      name: companyName,
+      course: compObj.course || "-",
+      tramite: compObj.tramite || "-",
+      date: today,
+      avg: averageScore,
+      certId: certId,
+      totalStudents: totalStudents,
+      approvedCount: approvedCount
+    };
+
+    const compPayload = {
+      type: 'company',
+      id: certId,
+      n: companyName.toUpperCase(),
+      c: companyName.toUpperCase(),
+      course: compObj.course || "-",
+      tramite: compObj.tramite || "-",
+      s: averageScore,
+      st: `APROBADA (${approvedCount} brigadistas)`,
+      d: today
+    };
+
+    registerIssuedCert(compPayload);
+
+    try {
+      document.getElementById('comp-pdf-name').textContent = companyName.toUpperCase();
+      document.getElementById('comp-pdf-course').textContent = compObj.course || "-";
+      document.getElementById('comp-pdf-tramite').textContent = compObj.tramite || "-";
+      document.getElementById('comp-pdf-date').textContent = today;
+      document.getElementById('comp-pdf-avg').textContent = averageScore;
+      document.getElementById('comp-pdf-unique-id').textContent = certId;
+
+      const verifyUrl = buildVerificationUrl(compPayload);
+      const qrContainer = document.getElementById('comp-pdf-qrcode');
+      qrContainer.innerHTML = '';
+      new QRCode(qrContainer, { text: verifyUrl, width: 78, height: 78 });
+    } catch(e) {
+      console.error("Error preparando QR Institucional:", e);
+    }
+
+    document.getElementById('modal-comp-res-title').textContent = companyName.toUpperCase();
+    document.getElementById('modal-comp-res-course').textContent = compObj.course || "-";
+    document.getElementById('modal-comp-res-tramite').textContent = compObj.tramite || "-";
+    document.getElementById('modal-comp-res-date').textContent = today;
+    document.getElementById('modal-comp-res-students').textContent = totalStudents;
+    document.getElementById('modal-comp-res-approved').textContent = approvedCount;
+    document.getElementById('modal-comp-res-avg').textContent = averageScore;
+    document.getElementById('modal-comp-res-code').textContent = certId;
+    
+    document.getElementById('modal-company-result').style.display = 'flex';
+
+    renderAdminPanel();
+    loadCompaniesInSelect();
+  }
+
+  function downloadCompanyPDF(callback) {
+    if (!lastCompanyCertData) {
+      alert("No se encontró el certificado de la empresa.");
+      return;
+    }
+    const element = document.getElementById('company-cert-template');
+    const opt = {
+      margin:       0,
+      filename:     `Certificado_Institucional_${lastCompanyCertData.name.replace(/\s+/g, '_')}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true, letterRendering: true, scrollY: 0 },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' },
+      pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+    };
+
+    html2pdf().set(opt).from(element).save().then(() => {
+      if (callback) callback();
+    });
+  }
+
+  function openCompanyEmailModal() {
+    document.getElementById('company-email-input').value = '';
+    document.getElementById('modal-company-email').style.display = 'flex';
+  }
+
+  function confirmCompanyEmailSend() {
+    const email = document.getElementById('company-email-input').value.trim();
+    if (!email || !email.includes('@')) {
+      alert("Por favor ingrese un correo válido.");
+      return;
+    }
+    closeModal('modal-company-email');
+
+    downloadCompanyPDF(() => {
+      const subject = encodeURIComponent(`Certificado Institucional de Brigada de Emergencia - ${lastCompanyCertData.name}`);
+      const body = encodeURIComponent(
+        `Estimados señores de ${lastCompanyCertData.name},\n\nSe remite adjunto el Certificado Institucional de Aprobación correspondiente al proceso de formación de su Brigada de Emergencia, avalado por la Dirección Nacional de Bomberos.\n\nDatos de la Acreditación:\n• Empresa: ${lastCompanyCertData.name}\n• Curso Nº: ${lastCompanyCertData.course}\n• Trámite Nº: ${lastCompanyCertData.tramite}\n• Calificación Promedio Final: ${lastCompanyCertData.avg} / 12\n• Código Oficial: ${lastCompanyCertData.certId}\n\n(Por favor adjunte el archivo PDF descargado a este correo antes de enviarlo).\n\nAtentamente,\nDepartamento de Protección Contra Incendios\nDirección Nacional de Bomberos`
+      );
+      window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+    });
+  }
+
+  function renderAdminResults() {
+    const results = JSON.parse(localStorage.getItem('dnb_evaluations') || '[]');
+    const selectedCompany = document.getElementById('filter-company').value;
+    const searchTerm = document.getElementById('search-student').value.toLowerCase().trim();
+
+    const filtered = [];
+    results.forEach((r, originalIndex) => {
+      const matchesComp = !selectedCompany || r.company === selectedCompany;
+      const matchesSearch = !searchTerm || r.name.toLowerCase().includes(searchTerm) || r.ci.includes(searchTerm);
+      if (matchesComp && matchesSearch) {
+        filtered.push({ ...r, originalIndex });
+      }
+    });
+
+    const tbody = document.querySelector('#results-table tbody');
+    if (filtered.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#888; padding:12px;">No se encontraron registros.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(r => `
+      <tr>
+        <td><strong>${r.name}</strong></td>
+        <td>${r.ci}</td>
+        <td>${r.company}</td>
+        <td><strong style="color:${r.score >= 7 ? '#2e7d32' : '#c62828'}; font-size:0.9rem;">${r.score}/12</strong></td>
+        <td style="font-size:0.72rem; color:#666;">${r.date || '-'}</td>
+        <td style="text-align:center;">
+          <button onclick="deleteSingleEvaluation(${r.originalIndex})" title="Eliminar este examen" style="border:none; background:none; color:red; cursor:pointer; font-size:1.05rem;">
+            🗑️
+          </button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function deleteSingleEvaluation(index) {
+    const results = JSON.parse(localStorage.getItem('dnb_evaluations') || '[]');
+    const target = results[index];
+    if (!target) return;
+
+    if (confirm(`¿Desea eliminar la evaluación de ${target.name} (CI: ${target.ci})? Esta acción no se puede deshacer.`)) {
+      results.splice(index, 1);
+      localStorage.setItem('dnb_evaluations', JSON.stringify(results));
+      renderAdminResults();
+    }
+  }
+
   function exportToCSV() {
-    if (globalEvaluations.length === 0) {
+    const results = JSON.parse(localStorage.getItem('dnb_evaluations') || '[]');
+    if (results.length === 0) {
       alert("No hay datos para exportar.");
       return;
     }
-    let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "Alumno,Cedula,Empresa,Nota,Dictamen,Fecha\n";
 
-    globalEvaluations.forEach(r => {
-      csvContent += `"${r.name}","${r.ci}","${r.company}","${r.score}/12","${r.status}","${r.date}"\n`;
+    let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+    csvContent += "Alumno,Cedula,Empresa,Nota,Fecha\n";
+
+    results.forEach(r => {
+      const row = [
+        `"${r.name}"`,
+        `"${r.ci}"`,
+        `"${r.company}"`,
+        `"${r.score}/12"`,
+        `"${r.date || ''}"`
+      ];
+      csvContent += row.join(",") + "\n";
     });
 
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "evaluaciones_bomberos.csv");
+    link.setAttribute("download", `Evaluaciones_Brigadas_${new Date().toISOString().slice(0,10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  }
+
+  /* =====================================================================
+     DETECTOR ANTI-COPIA
+     ===================================================================== */
+  document.addEventListener("visibilitychange", () => {
+    if (examInProgress && document.hidden) triggerCheatPenalty();
+  });
+  window.addEventListener("blur", () => {
+    if (examInProgress) triggerCheatPenalty();
+  });
+
+  function triggerCheatPenalty() {
+    examInProgress = false;
+    document.getElementById('modal-alert-cheat').style.display = 'flex';
+  }
+
+  function finalizeCheatExam() {
+    closeModal('modal-alert-cheat');
+    const name = document.getElementById('student-name').value.trim() || "No identificado (Anulado)";
+    const ci = document.getElementById('student-ci').value.trim() || "S/D";
+    const company = document.getElementById('student-company').value || "S/D";
+
+    saveResult(name, ci, company, 0, "REPROBADO (SALIDA DE APLICACIÓN)");
+    renderResultView(0, "REPROBADO (CERO POR MINIMIZAR LA VENTANA O CAMBIAR DE APLICACIÓN)");
+  }
+
+  function switchView(viewId) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById(viewId).classList.add('active');
+    window.scrollTo(0,0);
+  }
+
+  function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+  }
+
+  function resetToHome() {
+    document.getElementById('student-name').value = "";
+    document.getElementById('student-ci').value = "";
+    document.getElementById('student-company').selectedIndex = 0;
+    switchView('view-home');
+  }
+
+  function goToMainApp() {
+    window.location.hash = '';
+    switchView('view-home');
+  }
+
+  /* =====================================================================
+     PANTALLA DE VERIFICACIÓN (VISTA 5)
+     ===================================================================== */
+  function renderVerificationData(data) {
+    document.getElementById('v-code').textContent = data.id;
+    document.getElementById('v-type').textContent = data.type === 'company' ? "Institucional (Empresa)" : "Individual de Brigadista";
+    document.getElementById('v-name').textContent = data.n;
+    
+    if (data.type === 'company') {
+      document.getElementById('v-ci-row').style.display = 'none';
+    } else {
+      document.getElementById('v-ci-row').style.display = 'block';
+      document.getElementById('v-ci').textContent = data.ci || "S/D";
+    }
+
+    document.getElementById('v-company').textContent = data.c;
+    document.getElementById('v-score').textContent = data.type === 'company' 
+      ? `Promedio Final: ${data.s} / 12` 
+      : `${data.s} / 12 (${data.st})`;
+    document.getElementById('v-date').textContent = data.d;
+
+    switchView('view-verify');
+  }
+
+  function openVerifyModalManual() {
+    document.getElementById('manual-verify-input').value = '';
+    document.getElementById('modal-manual-verify').style.display = 'flex';
+  }
+
+  function searchCertificateByCode() {
+    const code = document.getElementById('manual-verify-input').value.trim().toUpperCase();
+    if (!code) return;
+
+    const issued = JSON.parse(localStorage.getItem('dnb_issued_registry') || '[]');
+    const found = issued.find(item => item.id === code);
+
+    if (found) {
+      closeModal('modal-manual-verify');
+      renderVerificationData(found);
+    } else {
+      alert(`No se encontró en el registro institucional ningún certificado con el código ${code}. Verifique que esté escrito correctamente.`);
+    }
+  }
+
+  function registerIssuedCert(payload) {
+    const issued = JSON.parse(localStorage.getItem('dnb_issued_registry') || '[]');
+    // Evitar duplicados
+    const exists = issued.findIndex(item => item.id === payload.id);
+    if (exists >= 0) {
+      issued[exists] = payload;
+    } else {
+      issued.push(payload);
+    }
+    localStorage.setItem('dnb_issued_registry', JSON.stringify(issued));
   }
 </script>
 
