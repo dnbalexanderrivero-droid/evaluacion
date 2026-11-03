@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>DNB - Evaluación Brigadas de Emergencia</title>
-  <!-- Firebase SDK para Sincronización en Vivo -->
+  <!-- Firebase SDK Oficial para Sincronización en Tiempo Real -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <!-- Generador de Códigos QR -->
@@ -600,6 +600,10 @@
     <div class="header">
       <h2 style="color: #333;">PANEL ADMINISTRADOR</h2>
       <p style="font-size: 0.75rem; color: #666;">Dirección Nacional de Bomberos</p>
+      <!-- Indicador de Nube -->
+      <div id="cloud-status-badge" style="font-size:0.75rem; padding:4px 10px; border-radius:15px; background:#e8f5e9; color:#2e7d32; display:inline-block; margin-top:5px; font-weight:bold;">
+        🟢 Conectado a la Nube en Tiempo Real
+      </div>
     </div>
 
     <!-- 1. Alta de Empresas -->
@@ -632,7 +636,7 @@
       <button class="btn btn-primary btn-sm" style="width:100%; margin-top:4px;" onclick="addCompanyWithMeta()">REGISTRAR EMPRESA</button>
 
       <p style="font-size: 0.72rem; color: #666; margin: 10px 0 6px 0;">
-        Lista de Empresas registradas (puedes reactivarlas o cerrarlas haciendo clic en el estado):
+        Lista de Empresas registradas (se sincronizan automáticamente en los celulares de los alumnos):
       </p>
       <div id="company-list" style="font-size: 0.85rem; max-height: 140px; overflow-y: auto;"></div>
     </div>
@@ -654,7 +658,7 @@
       </div>
     </div>
 
-    <!-- 3. Evaluaciones Recibidas -->
+    <!-- 3. Evaluaciones Recibidas (En Vivo desde los Celulares) -->
     <div class="admin-section" style="margin-top: 15px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
         <h4>3. Evaluaciones Recibidas (En Vivo)</h4>
@@ -685,8 +689,8 @@
       </div>
     </div>
 
-    <!-- 4. Verificación y Auditoría de Certificados -->
-    <div class="admin-section">
+    <!-- 4. Verificación Manual por Código -->
+    <div class="admin-section" style="border-bottom:none;">
       <h4 style="color: #b8860b;">4. Auditoría y Verificación de Certificados</h4>
       <p style="font-size: 0.75rem; color: #666; margin-bottom: 8px;">
         Consulte y valide la autenticidad de cualquier certificado emitido ingresando su código único:
@@ -696,20 +700,10 @@
       </button>
     </div>
 
-    <!-- 5. Ajustes: Cargar Escudo Directamente -->
-    <div class="admin-section" style="border-bottom:none;">
-      <h4>5. Personalización del Escudo Oficial</h4>
-      <div class="form-group">
-        <label>Cargar imagen del Escudo (PNG o JPG):</label>
-        <input type="file" id="admin-escudo-file" class="form-control" accept="image/*" onchange="uploadDirectEscudo(this)">
-        <small style="color:#666; font-size:0.75rem;">Si la imagen no carga automáticamente, selecciónala aquí y quedará guardada de por vida en este dispositivo.</small>
-      </div>
-    </div>
-
     <button class="btn btn-outline" style="margin-top: 15px;" onclick="switchView('view-home')">CERRAR SESIÓN</button>
   </div>
 
-  <!-- ==================== VISTA 5: VERIFICACIÓN OFICIAL ==================== -->
+  <!-- ==================== VISTA 5: VERIFICACIÓN OFICIAL (PANTALLA DE DESTINO DEL QR) ==================== -->
   <div id="view-verify" class="view">
     <div class="header">
       <div class="logo-container">
@@ -765,7 +759,8 @@
 
 </div>
 
-<!-- MODAL RESULTADO DE CIERRE INSTITUCIONAL -->
+<!-- ==================== MODALES ==================== -->
+
 <div id="modal-company-result" class="modal-overlay">
   <div class="modal-card" style="border-top-color: #8b0000;">
     <h4 style="color:#8b0000; font-size:1.15rem;">Certificado Institucional</h4>
@@ -995,6 +990,9 @@
 </div>
 
 <script>
+  // Enlace oficial único de internet para el sistema de verificación
+  const OFFICIAL_ONLINE_URL = "https://dnbalexanderrivero-droid.github.io/evaluacion/";
+
   /* =====================================================================
      CONEXIÓN CLOUD FIREBASE
      ===================================================================== */
@@ -1016,28 +1014,40 @@
     console.warn("Modo local o Firebase no disponible:", e);
   }
 
+  // Generador de URL oficial ligera para el QR (Se lee en 0.1s desde cualquier celular)
+  function buildVerificationUrl(data) {
+    const params = new URLSearchParams({
+      v: data.type === 'company' ? 'emp' : 'ind',
+      id: data.id || '',
+      n: data.n || '',
+      c: data.c || '',
+      s: data.s || '',
+      st: data.st || '',
+      d: data.d || ''
+    });
+    if (data.ci) params.set('ci', data.ci);
+    if (data.course) params.set('co', data.course);
+    if (data.tramite) params.set('tr', data.tramite);
+
+    return `${OFFICIAL_ONLINE_URL}?${params.toString()}`;
+  }
+
   /* =====================================================================
-     CARGA DEL ESCUDO INTELIGENTE Y MULTI-FORMATO
+     CARGA DEL ESCUDO OFICIAL
      ===================================================================== */
   function initOfficialLogo() {
     const saved = localStorage.getItem('dnb_custom_logo');
-    // Si hay una imagen válida guardada (> 500 caracteres), usarla directamente
     if (saved && saved.startsWith('data:image/') && saved.length > 500) {
       applyLogoToAll(saved);
       return;
-    } else {
-      localStorage.removeItem('dnb_custom_logo');
     }
 
-    // Probar candidatos de nombres de archivo comunes
-    const candidates = ['escudo.png', 'escudo.PNG', 'Escudo.png', 'escudo.jpg', 'escudo.jpeg', 'Escudo.PNG'];
+    const candidates = ['escudo.png', 'escudo.PNG', 'Escudo.png', 'escudo.jpg', 'escudo.jpeg'];
     tryLoadCandidates(candidates, 0);
   }
 
   function tryLoadCandidates(list, index) {
-    if (index >= list.length) {
-      return;
-    }
+    if (index >= list.length) return;
 
     const testImg = new Image();
     testImg.onload = function() {
@@ -1068,24 +1078,6 @@
     document.querySelectorAll('.cert-dyn-logo').forEach(el => el.src = src);
   }
 
-  function uploadDirectEscudo(input) {
-    if (input.files && input.files[0]) {
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        localStorage.setItem('dnb_custom_logo', e.target.result);
-        applyLogoToAll(e.target.result);
-        alert("¡Escudo cargado y guardado correctamente!");
-      };
-      reader.readAsDataURL(input.files[0]);
-    }
-  }
-
-  function buildVerificationUrl(payload) {
-    const token = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-    let base = window.location.href.split('?')[0].split('#')[0].replace(/\/+$/, '');
-    return `${base}#verify=${token}`;
-  }
-
   let activeQuestions = [];
   let examInProgress = false;
 
@@ -1112,7 +1104,9 @@
   function saveStoredCompanies(list) {
     localStorage.setItem('dnb_companies_v4', JSON.stringify(list));
     if (firebaseDb) {
-      try { firebaseDb.ref('companies').set(list); } catch(e){}
+      firebaseDb.ref('companies').set(list).catch(e => {
+        console.warn("Aviso Firebase:", e);
+      });
     }
   }
 
@@ -1127,15 +1121,15 @@
 
   window.addEventListener('DOMContentLoaded', () => {
     initOfficialLogo();
-    checkVerificationUrl();
+    checkUrlVerification();
 
-    const qrTarget = window.location.href.split('#')[0].split('?')[0];
+    // QR de acceso en portada
     const qEl = document.getElementById("qrcode");
     if (qEl) {
       qEl.innerHTML = "";
       try {
         new QRCode(qEl, {
-          text: qrTarget,
+          text: OFFICIAL_ONLINE_URL,
           width: 140,
           height: 140
         });
@@ -1144,6 +1138,7 @@
 
     loadCompaniesInSelect();
 
+    // Sincronización en vivo con Firebase
     if (firebaseDb) {
       firebaseDb.ref('companies').on('value', snap => {
         const val = snap.val();
@@ -1162,25 +1157,39 @@
           localStorage.setItem('dnb_evaluations', JSON.stringify(list));
           renderAdminResults();
         }
+      }, err => {
+        const badge = document.getElementById('cloud-status-badge');
+        if (badge) {
+          badge.textContent = "⚠️ Nube: Requiere abrir Reglas en Firebase";
+          badge.style.background = "#ffebee";
+          badge.style.color = "#c62828";
+        }
       });
     }
   });
 
-  function checkVerificationUrl() {
-    const hash = window.location.hash;
-    if (hash.startsWith('#verify=')) {
-      try {
-        const rawToken = hash.replace('#verify=', '');
-        const decoded = JSON.parse(decodeURIComponent(escape(atob(rawToken))));
-        renderVerificationData(decoded);
-      } catch (e) {
-        console.error("Token de verificación inválido", e);
-      }
+  // Verificación directa mediante escaneo de QR (Lectura inmediata de URL)
+  function checkUrlVerification() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('v') && params.has('id')) {
+      const data = {
+        type: params.get('v') === 'emp' ? 'company' : 'individual',
+        id: params.get('id'),
+        n: params.get('n') || '',
+        c: params.get('c') || '',
+        s: params.get('s') || '',
+        st: params.get('st') || '',
+        d: params.get('d') || '',
+        ci: params.get('ci') || '',
+        course: params.get('co') || '',
+        tramite: params.get('tr') || ''
+      };
+      renderVerificationData(data);
     }
   }
 
   /* =====================================================================
-     BANCO DE PREGUNTAS
+     BANCO DE PREGUNTAS (12 BLOQUES)
      ===================================================================== */
   const IMG_EXTINTOR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 240'%3E%3Crect x='44' y='10' width='12' height='30' fill='%23666'/%3E%3Cpath d='M30 40 L70 40 L65 55 L35 55 Z' fill='%23333'/%3E%3Cpath d='M25 75 Q25 55 50 55 Q75 55 75 75 L75 210 Q75 225 50 225 Q25 225 25 210 Z' fill='%23d32f2f'/%3E%3Crect x='32' y='100' width='36' height='70' fill='%23fff' stroke='%23333'/%3E%3Ctext x='50' y='130' font-size='9' text-anchor='middle' font-weight='bold' fill='%23000'%3EEXTINTOR%3C/text%3E%3Ctext x='50' y='150' font-size='11' text-anchor='middle' fill='%23d32f2f'%3EABC%3C/text%3E%3Ccircle cx='50' cy='32' r='8' fill='%23bbb' stroke='%23333'/%3E%3Cpath d='M50 40 L85 25' stroke='%23333' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E";
 
@@ -1431,11 +1440,17 @@
 
       registerIssuedCert(certPayload);
 
+      // Generar URL directa que abre Safari/Chrome en cualquier celular
       const verifyUrl = buildVerificationUrl(certPayload);
       const qrContainer = document.getElementById('cert-pdf-qrcode');
       qrContainer.innerHTML = '';
       try {
-        new QRCode(qrContainer, { text: verifyUrl, width: 78, height: 78 });
+        new QRCode(qrContainer, {
+          text: verifyUrl,
+          width: 78,
+          height: 78,
+          correctLevel: QRCode.CorrectLevel.M
+        });
       } catch(e) { console.warn(e); }
 
     } else {
@@ -1492,6 +1507,7 @@
     });
   }
 
+  // Guardado local + envío en vivo a Firebase Cloud
   function saveResult(name, ci, company, score, status, certId) {
     const now = new Date();
     const formattedDate = `${now.toLocaleDateString()} ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
@@ -1502,9 +1518,9 @@
     localStorage.setItem('dnb_evaluations', JSON.stringify(records));
 
     if (firebaseDb) {
-      try {
-        firebaseDb.ref('evaluations').push(record);
-      } catch(e) { console.warn("Error sincronizando con Firebase:", e); }
+      firebaseDb.ref('evaluations').push(record).catch(err => {
+        console.warn("Error enviando a Firebase (Revisar Reglas):", err);
+      });
     }
   }
 
@@ -1618,7 +1634,7 @@
 
     renderAdminPanel();
     loadCompaniesInSelect();
-    alert(`Empresa "${name}" registrada correctamente.`);
+    alert(`Empresa "${name}" registrada y sincronizada en la nube.`);
   }
 
   function removeCompany(index) {
@@ -1632,7 +1648,7 @@
   }
 
   /* =====================================================================
-     FINALIZAR PROCESO DE EMPRESA Y MODAL DIRECTO
+     FINALIZAR PROCESO DE EMPRESA Y CERTIFICADO
      ===================================================================== */
   function finalizeCompanyProcess() {
     const companySelect = document.getElementById('close-company-select');
@@ -1704,7 +1720,12 @@
       const verifyUrl = buildVerificationUrl(compPayload);
       const qrContainer = document.getElementById('comp-pdf-qrcode');
       qrContainer.innerHTML = '';
-      new QRCode(qrContainer, { text: verifyUrl, width: 78, height: 78 });
+      new QRCode(qrContainer, {
+        text: verifyUrl,
+        width: 78,
+        height: 78,
+        correctLevel: QRCode.CorrectLevel.M
+      });
     } catch(e) {
       console.error("Error preparando QR Institucional:", e);
     }
@@ -1890,8 +1911,7 @@
   }
 
   function goToMainApp() {
-    window.location.hash = '';
-    switchView('view-home');
+    window.location.href = OFFICIAL_ONLINE_URL;
   }
 
   /* =====================================================================
